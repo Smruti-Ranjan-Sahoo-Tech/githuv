@@ -1,0 +1,20 @@
+{
+  "name": "microservices",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch index.ts",
+    "start:tex-pdf": "bun run services/tex-to-pdf/index.ts",
+    "setup:tex": "bash scripts/setup-tex.sh"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
