@@ -1415,7 +1415,7 @@ export default function ProfileStudioPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
-        <aside className={`${cardBase} sticky top-6 h-fit space-y-6`}>
+        <aside className={`${cardBase} xl:sticky xl:top-6 h-fit space-y-6`}>
           <ProgressRing
             progress={progress}
             completedSteps={profile?.completedSteps?.length ?? 0}

@@ -32,7 +32,7 @@ export default function ProgressRing({
 
   return (
     <div className="relative mx-auto flex w-full max-w-sm items-center justify-center">
-      <svg viewBox="0 0 140 140" className="h-64 w-64 -rotate-90">
+      <svg viewBox="0 0 140 140" className="h-48 w-48 sm:h-64 sm:w-64 -rotate-90">
         <defs>
           <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={accentFrom} />

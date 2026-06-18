@@ -149,7 +149,7 @@ export default function ResumeDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
             My Resumes
@@ -160,7 +160,7 @@ export default function ResumeDashboardPage() {
         </div>
         <Link
           href="/dashboard/resume-builder"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all w-full sm:w-auto"
           style={{
             background:
               "linear-gradient(135deg, var(--accent-gradient-from), var(--accent-gradient-to))",
@@ -222,7 +222,7 @@ export default function ResumeDashboardPage() {
                   PDF Preview
                 </span>
               </div>
-              <div className="h-[600px]">
+              <div className="h-[300px] sm:h-[450px] md:h-[600px]">
                 {pdfBlobUrl ? (
                   <iframe
                     src={pdfBlobUrl}
@@ -367,10 +367,10 @@ export default function ResumeDashboardPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Link
                         href={`/dashboard/resume-builder/output?threadId=${resume.threadId}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
                         style={{
                           background: "var(--accent-soft)",
                           color: "var(--accent)",
@@ -385,7 +385,7 @@ export default function ResumeDashboardPage() {
                           e.stopPropagation();
                           handleDownload(resume);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
                         style={{
                           background: "rgba(34,197,94,0.12)",
                           color: "#16a34a",
@@ -400,7 +400,7 @@ export default function ResumeDashboardPage() {
                           e.stopPropagation();
                           handleDelete(resume);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
                         style={{
                           background: "rgba(239,68,68,0.12)",
                           color: "#ef4444",

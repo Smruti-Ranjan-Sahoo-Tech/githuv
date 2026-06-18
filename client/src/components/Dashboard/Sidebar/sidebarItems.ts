@@ -5,12 +5,19 @@ import {
   LayoutDashboard,
   Palette,
   ScrollText,
-  Settings,
-  Shield,
+  Sparkles,
   Users,
+  Grid3X3,
 } from "lucide-react";
 
-export const sidebarItems = [
+export type SidebarItem = {
+  name: string;
+  route: string;
+  icon: any;
+  section?: string;
+};
+
+export const sidebarItems: SidebarItem[] = [
   {
     name: "Dashboard",
     route: "/dashboard",
@@ -46,14 +53,17 @@ export const sidebarItems = [
     route: "/dashboard/analytics",
     icon: BarChart3,
   },
+  { name: "divider", route: "", icon: null },
   {
-    name: "Admins",
-    route: "/dashboard/admins",
-    icon: Shield,
+    name: "Strike Recovery",
+    route: "/dashboard/strike-recovery",
+    icon: Sparkles,
+    section: "Special Features",
   },
   {
-    name: "Settings",
-    route: "/dashboard/settings",
-    icon: Settings,
+    name: "Contribution Patterns",
+    route: "/dashboard/contribution-patterns",
+    icon: Grid3X3,
+    section: "Special Features",
   },
 ];

@@ -279,7 +279,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="overview" className="px-5 py-20">
+      <section id="overview" className="px-5 py-20 scroll-mt-20">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
             <div className="rounded-lg border border-white/10 bg-neutral-900 p-6">
@@ -310,7 +310,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="features" className="px-5 py-20">
+      <section id="features" className="px-5 py-20 scroll-mt-20">
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 max-w-2xl">
             <p className="text-sm font-bold uppercase tracking-wide text-red-300">

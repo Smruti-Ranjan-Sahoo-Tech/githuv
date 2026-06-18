@@ -1,4 +1,4 @@
-import { createOctokit } from "../../config/Octokit/octokit";
+import { createOctokit, getAuthenticatedOctokit } from "../../config/Octokit/octokit";
 import type { Request, Response } from "express";
 import moment from "moment";
 import {
@@ -12,14 +12,6 @@ import {
 const REPO_NAME = "githuv-official-app-for-contribution";
 const FILE_PATH = "data.json";
 const GITHUB_API_VERSION = "2022-11-28";
-
-function getAccessToken(): string {
-  const token = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_TOKEN || "";
-  if (!token) {
-    throw new Error("Missing GitHub access token. Set GITHUB_ACCESS_TOKEN or GITHUB_TOKEN.");
-  }
-  return token;
-}
 
 async function createCommit(
   octokit: ReturnType<typeof createOctokit>,
@@ -149,7 +141,7 @@ export default class ContributionController {
         });
       }
 
-      const octokit = createOctokit(getAccessToken());
+      const octokit = await getAuthenticatedOctokit(req);
       const { data: githubUser } = await octokit.request("GET /user");
       const owner = githubUser.login;
 

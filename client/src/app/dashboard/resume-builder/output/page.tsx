@@ -353,7 +353,7 @@ export default function ResumeBuilderOutputPage() {
     >
       {/* Top bar */}
       <div
-        className="flex items-center gap-3 px-2 pb-3 shrink-0"
+        className="flex flex-wrap items-center gap-2 px-2 pb-3 shrink-0"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
         <Link
@@ -367,13 +367,13 @@ export default function ResumeBuilderOutputPage() {
           <ArrowLeft size={15} /> Back
         </Link>
 
-        <div className="flex items-center gap-2 flex-1">
-          <FileText size={18} style={{ color: "var(--accent)" }} />
-          <span className="font-bold text-base" style={{ color: "var(--foreground)" }}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <FileText size={18} style={{ color: "var(--accent)" }} className="shrink-0" />
+          <span className="font-bold text-base truncate" style={{ color: "var(--foreground)" }}>
             Resume Builder
           </span>
           <span
-            className="text-xs px-2 py-0.5 rounded-full font-semibold"
+            className="text-xs px-2 py-0.5 rounded-full font-semibold shrink-0"
             style={{
               background: "var(--accent-soft)",
               color: "var(--accent)",
@@ -383,7 +383,7 @@ export default function ResumeBuilderOutputPage() {
           </span>
           {savedName && (
             <span
-              className="text-xs px-2 py-0.5 rounded-full font-medium"
+              className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0"
               style={{
                 background: "rgba(34,197,94,0.12)",
                 color: "#16a34a",
@@ -395,22 +395,22 @@ export default function ResumeBuilderOutputPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all"
             style={{
               background: copied ? "var(--accent-soft)" : "var(--surface-input)",
               color: copied ? "var(--accent)" : "var(--text-secondary)",
               border: "1px solid var(--border-subtle)",
             }}
           >
-            <Copy size={14} /> {copied ? "Copied!" : "Copy LaTeX"}
+            <Copy size={14} /> {copied ? "Copied!" : "Copy"}
           </button>
           <button
             onClick={handleCompile}
             disabled={compiling}
-            className="flex items-center gap-1.5 text-xs px-4 py-1.5 rounded-lg font-semibold transition-all"
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
             style={{
               background: compiling ? "var(--surface-input)" : "#22c55e",
               color: compiling ? "var(--text-secondary)" : "#fff",
@@ -418,7 +418,7 @@ export default function ResumeBuilderOutputPage() {
             }}
           >
             {compiling ? (
-              <><Loader2 size={14} className="animate-spin" /> Compiling...</>
+              <><Loader2 size={14} className="animate-spin" /> Compile</>
             ) : (
               <><Play size={14} /> Compile</>
             )}
@@ -426,7 +426,7 @@ export default function ResumeBuilderOutputPage() {
           <button
             onClick={openSaveDialog}
             disabled={cloudinaryLoading}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all"
             style={{
               background: cloudinaryLoading ? "var(--surface-input)" : "var(--accent-soft)",
               color: cloudinaryLoading ? "var(--text-secondary)" : "var(--accent)",
@@ -435,15 +435,15 @@ export default function ResumeBuilderOutputPage() {
             }}
           >
             {cloudinaryLoading ? (
-              <><Loader2 size={14} className="animate-spin" /> Saving...</>
+              <><Loader2 size={14} className="animate-spin" /> Save</>
             ) : (
-              <><Save size={14} /> Save to Cloud</>
+              <><Save size={14} /> Save</>
             )}
           </button>
           <button
             onClick={handleDownloadPdf}
             disabled={compiling}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold"
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold"
             style={{
               background:
                 "linear-gradient(135deg, var(--accent-gradient-from), var(--accent-gradient-to))",
@@ -451,7 +451,7 @@ export default function ResumeBuilderOutputPage() {
               opacity: compiling ? 0.7 : 1,
             }}
           >
-            <Download size={14} /> Download PDF
+            <Download size={14} /> PDF
           </button>
         </div>
       </div>
@@ -527,12 +527,11 @@ export default function ResumeBuilderOutputPage() {
       )}
 
       {/* Main layout */}
-      <div className="flex flex-1 gap-4 pt-3 overflow-hidden">
+      <div className="flex flex-1 flex-col lg:flex-row gap-4 pt-3 overflow-hidden">
         {/* LEFT PANEL: 60% - code editor + AI chat */}
         <div
-          className="flex flex-col rounded-2xl overflow-hidden"
+          className="flex flex-col rounded-2xl overflow-hidden w-full lg:w-[60%]"
           style={{
-            flex: "0 0 60%",
             border: "2px solid var(--accent-border-strong)",
             background: "var(--dashboard-card-bg)",
           }}
@@ -719,9 +718,8 @@ export default function ResumeBuilderOutputPage() {
 
         {/* RIGHT PANEL: Compiled PDF Preview */}
         <div
-          className="flex flex-col rounded-2xl overflow-hidden"
+          className="flex flex-col rounded-2xl overflow-hidden w-full lg:flex-1 lg:min-w-0"
           style={{
-            flex: "1",
             border: "2px solid var(--border-subtle)",
             background: "var(--dashboard-card-bg)",
           }}
