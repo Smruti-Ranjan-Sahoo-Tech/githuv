@@ -7,7 +7,6 @@ import {
   ScrollText,
   Sparkles,
   Users,
-  Grid3X3,
 } from "lucide-react";
 
 export type SidebarItem = {
@@ -58,12 +57,6 @@ export const sidebarItems: SidebarItem[] = [
     name: "Strike Recovery",
     route: "/dashboard/strike-recovery",
     icon: Sparkles,
-    section: "Special Features",
-  },
-  {
-    name: "Contribution Patterns",
-    route: "/dashboard/contribution-patterns",
-    icon: Grid3X3,
     section: "Special Features",
   },
 ];

@@ -60,7 +60,7 @@ export default class auth {
                 },
                 {
                     upsert: true,
-                    new: true,
+                    returnDocument: 'after',
                 }
             );
             const token = generateToken({ githubUsername, githubId, firebaseUID })

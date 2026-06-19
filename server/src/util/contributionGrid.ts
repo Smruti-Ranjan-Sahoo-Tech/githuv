@@ -63,11 +63,15 @@ export function textToGrid(
 ): Map<string, number> {
   const schedule = new Map<string, number>();
   const upper = text.toUpperCase();
-  const start = moment(startDate).startOf("week");
-  const end = moment(endDate);
-  const totalDays = end.diff(start, "days") + 1;
+  const rangeStart = moment(startDate).startOf("week");
+  const rangeEnd = moment(endDate);
+  const totalDays = rangeEnd.diff(rangeStart, "days") + 1;
 
   if (totalDays <= 0) return schedule;
+
+  const textWidth = upper.length * 6 - 1;
+  const lastWeek = moment(rangeEnd).startOf("week");
+  const startWeek = moment(lastWeek).subtract(textWidth, "weeks");
 
   for (let i = 0; i < upper.length; i++) {
     const char = upper[i] || " ";
@@ -80,10 +84,10 @@ export function textToGrid(
         if (bit === 0) continue;
 
         const weekOffset = charOffset + col;
-        const targetDate = moment(start).add(weekOffset, "weeks").day(row);
+        const targetDate = moment(startWeek).add(weekOffset, "weeks").day(row);
         const dateKey = targetDate.format("YYYY-MM-DD");
 
-        if (targetDate.isBetween(start, end, "day", "[]")) {
+        if (targetDate.isBetween(rangeStart, rangeEnd, "day", "[]")) {
           schedule.set(dateKey, intensity);
         }
       }

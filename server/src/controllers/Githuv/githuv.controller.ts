@@ -5,18 +5,6 @@ const REPO_NAME = "githuv-official-app-for-contribution";
 const README_PATH = "README.md";
 const GITHUB_API_VERSION = "2022-11-28";
 
-function getGithubAccessToken() {
-  const accessToken = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_TOKEN || "";
-
-  if (!accessToken) {
-    throw new Error(
-      "Missing GitHub access token. Set GITHUB_ACCESS_TOKEN or GITHUB_TOKEN."
-    );
-  }
-
-  return accessToken;
-}
-
 function buildReadmeContent() {
   return Buffer.from(
     `# Githuv Official App For Contribution
@@ -74,7 +62,7 @@ async function upsertReadme(
 export default class githuv {
   static async getGithuvUser(req: Request, res: Response) {
     try {
-      const octokit = createOctokit(getGithubAccessToken());
+      const octokit = await getAuthenticatedOctokit(req);
       const { data } = await octokit.request("GET /user");
 
       return res.json(data);
@@ -198,7 +186,7 @@ export default class githuv {
 
   static async createInitialRepo(req: Request, res: Response) {
     try {
-      const octokit = createOctokit(getGithubAccessToken());
+      const octokit = await getAuthenticatedOctokit(req);
       const { data: githubUser } = await octokit.request("GET /user");
 
       try {

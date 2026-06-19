@@ -73,9 +73,7 @@ export const useGithubDataStore = create<GithubDataState>((set) => ({
   fetchDashboardData: async (_githubAccessToken?: string) => {
     set({ loading: true, error: null });
     try {
-      const { data } = await axiosInstance.get("/api/githuv/dashboard-data", {
-        withCredentials: true,
-      });
+      const { data } = await axiosInstance.get("/api/githuv/dashboard-data");
       set({ data: data as DashboardData, loading: false });
     } catch (error: any) {
       const message =

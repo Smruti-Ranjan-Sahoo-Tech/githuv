@@ -92,6 +92,17 @@ export interface LinkedinInfo {
   openToWork?: boolean;
 }
 
+export interface StrikeRecovery {
+  startDate?: string;
+  endDate?: string;
+  totalCommits?: number;
+  uniqueDays?: number;
+  longestStreak?: number;
+  repository?: string;
+  owner?: string;
+  recoveredAt?: string;
+}
+
 export interface IUserProfile extends Document {
   user: mongoose.Types.ObjectId;
   firebaseUID: string;
@@ -109,6 +120,7 @@ export interface IUserProfile extends Document {
   opensource: OpenSource[];
   githubInfo: GithubInfo;
   linkedinInfo: LinkedinInfo;
+  strikeRecovery?: StrikeRecovery;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -243,6 +255,20 @@ const linkedinInfoSchema = new Schema<LinkedinInfo>(
   { _id: false }
 );
 
+const strikeRecoverySchema = new Schema<StrikeRecovery>(
+  {
+    startDate: { type: String, trim: true, default: "" },
+    endDate: { type: String, trim: true, default: "" },
+    totalCommits: { type: Number, default: 0 },
+    uniqueDays: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    repository: { type: String, trim: true, default: "" },
+    owner: { type: String, trim: true, default: "" },
+    recoveredAt: { type: String, trim: true, default: "" },
+  },
+  { _id: false }
+);
+
 const userProfileSchema = new Schema<IUserProfile>(
   {
     user: {
@@ -314,6 +340,10 @@ const userProfileSchema = new Schema<IUserProfile>(
     },
     linkedinInfo: {
       type: linkedinInfoSchema,
+      default: () => ({}),
+    },
+    strikeRecovery: {
+      type: strikeRecoverySchema,
       default: () => ({}),
     },
   },

@@ -10,19 +10,12 @@ export const createOctokit = (accessToken: string) => {
 
 export async function getAuthenticatedOctokit(req: Request) {
   const firebaseUID = (req as any).user?.firebaseUID;
-  if (firebaseUID) {
-    const user: any = await User.findOne({ firebaseUID }).select("+githubAccessToken");
-    if (user?.githubAccessToken) {
-      return createOctokit(user.githubAccessToken);
-    }
+  if (!firebaseUID) {
+    throw new Error("Unauthorized: no firebaseUID in request");
   }
-  const bodyToken = (req as any).body?.githubAccessToken;
-  if (bodyToken) {
-    return createOctokit(bodyToken);
+  const user: any = await User.findOne({ firebaseUID }).select("+githubAccessToken");
+  if (!user?.githubAccessToken) {
+    throw new Error("GitHub access token not found for user");
   }
-  const accessToken = process.env.GITHUB_ACCESS_TOKEN || process.env.GITHUB_TOKEN || "";
-  if (!accessToken) {
-    throw new Error("Missing GitHub access token. Set GITHUB_ACCESS_TOKEN or GITHUB_TOKEN.");
-  }
-  return createOctokit(accessToken);
+  return createOctokit(user.githubAccessToken);
 }

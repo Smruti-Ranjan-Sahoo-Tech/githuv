@@ -93,6 +93,17 @@ export type LinkedinInfo = {
   openToWork: boolean;
 };
 
+export type StrikeRecovery = {
+  startDate: string;
+  endDate: string;
+  totalCommits: number;
+  uniqueDays: number;
+  longestStreak: number;
+  repository: string;
+  owner: string;
+  recoveredAt: string;
+};
+
 export type OnboardingProfile = {
   user?: string;
   firebaseUID?: string;
@@ -110,6 +121,7 @@ export type OnboardingProfile = {
   opensource: OpenSource[];
   githubInfo: GithubInfo;
   linkedinInfo: LinkedinInfo;
+  strikeRecovery?: StrikeRecovery;
   createdAt?: string;
   updatedAt?: string;
 };
