@@ -1,9 +1,5 @@
-import React from 'react'
+import RepositoryIntelligenceView from "@/components/Dashboard/Repositories/RepositoryIntelligenceView";
 
-const page = () => {
-  return (
-    <div>repositories</div>
-  )
+export default function Page() {
+  return <RepositoryIntelligenceView />;
 }
-
-export default page

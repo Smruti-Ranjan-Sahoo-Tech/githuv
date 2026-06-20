@@ -1,9 +1,51 @@
 import { createOctokit, getAuthenticatedOctokit } from "../../config/Octokit/octokit";
 import type { Request, Response } from "express";
+import { repositoryReadmeGraph } from "../../lib/Langgraph/RepositoryReadmeBuilder/Graph";
+import { User } from "../../models/user.model";
 
 const REPO_NAME = "githuv-official-app-for-contribution";
 const README_PATH = "README.md";
 const GITHUB_API_VERSION = "2022-11-28";
+
+function encodeContent(content: string) {
+  return Buffer.from(content, "utf8").toString("base64");
+}
+
+function decodeContent(content: string) {
+  return Buffer.from(content, "base64").toString("utf8");
+}
+
+async function getReadmeFile(
+  octokit: ReturnType<typeof createOctokit>,
+  owner: string,
+  repo: string
+) {
+  const response = await octokit
+    .request("GET /repos/{owner}/{repo}/contents/{path}", {
+      owner,
+      repo,
+      path: README_PATH,
+      headers: {
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+      },
+    })
+    .catch((error: any) => {
+      if (error.status === 404) {
+        return null;
+      }
+
+      throw error;
+    });
+
+  return response as
+    | null
+    | {
+        data: {
+          sha: string;
+          content: string;
+        };
+      };
+}
 
 function buildReadmeContent() {
   return Buffer.from(
@@ -20,29 +62,7 @@ async function upsertReadme(
   octokit: ReturnType<typeof createOctokit>,
   owner: string
 ) {
-  const existingFile = await octokit.request(
-    "GET /repos/{owner}/{repo}/contents/{path}",
-    {
-      owner,
-      repo: REPO_NAME,
-      path: README_PATH,
-      headers: {
-        "X-GitHub-Api-Version": GITHUB_API_VERSION,
-      },
-    }
-  ).catch((error: any) => {
-    if (error.status === 404) {
-      return null;
-    }
-
-    throw error;
-  }) as
-    | null
-    | {
-        data: {
-          sha: string;
-        };
-      };
+  const existingFile = await getReadmeFile(octokit, owner, REPO_NAME);
 
   await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
     owner,
@@ -83,7 +103,7 @@ export default class githuv {
       const octokit = await getAuthenticatedOctokit(req);
 
       const { data: user } = await octokit.request("GET /user");
-      const { data: repos } = await octokit.request("GET /user/repos", {
+      const repos = await octokit.paginate("GET /user/repos", {
         per_page: 100,
         sort: "updated",
         direction: "desc",
@@ -160,6 +180,17 @@ export default class githuv {
           ),
         },
         recentRepos,
+        repositories: repos.map((repo: any) => ({
+          name: repo.name,
+          full_name: repo.full_name,
+          description: repo.description,
+          language: repo.language,
+          stars: repo.stargazers_count || 0,
+          forks: repo.forks_count || 0,
+          updated_at: repo.updated_at,
+          private: repo.private,
+          html_url: repo.html_url,
+        })),
         recentActivity: events.map((event: any) => ({
           id: event.id,
           type: event.type,
@@ -227,6 +258,216 @@ export default class githuv {
         message:
           error instanceof Error ? error.message : "Failed to create repository",
         githubError: error.response?.data,
+      });
+    }
+  }
+
+  static async generateRepositoryReadme(req: Request, res: Response) {
+    try {
+      const octokit = await getAuthenticatedOctokit(req);
+      const { data: githubUser } = await octokit.request("GET /user");
+      const body = req.body as any;
+      const repoOwner = body.repoOwner || githubUser.login;
+      const repoName = body.repoName;
+
+      if (!repoName) {
+        return res.status(400).json({
+          success: false,
+          message: "repoName is required",
+        });
+      }
+
+      const user = await User.findOne({ firebaseUID: (req as any).user?.firebaseUID }).select("+githubAccessToken");
+
+      const result = await repositoryReadmeGraph.invoke({
+        octokit,
+        userId: githubUser.login,
+        repoOwner,
+        repoName,
+        githubAccessToken: user?.githubAccessToken || "",
+        userInput: {
+          projectPurpose: body.userInput?.projectPurpose || body.projectPurpose || "",
+          keyFeatures: body.userInput?.keyFeatures || body.keyFeatures || [],
+          targetUsers: body.userInput?.targetUsers || body.targetUsers || "",
+        },
+      } as any);
+
+      return res.json({
+        success: true,
+        repoOwner,
+        repoName,
+        existingReadme: result.existingReadme,
+        repoMeta: result.repoMeta,
+        folderTree: result.folderTree,
+        configSummary: result.configSummary,
+        importantFeatures: result.importantFeatures,
+        importantCodeSummary: result.importantCodeSummary,
+        repoKnowledge: result.repoKnowledge,
+        generatedReadme: result.generatedReadme,
+        validation: result.validation,
+        preview: result.preview,
+      });
+    } catch (error: any) {
+      console.error("Repository README Generation Error:", {
+        status: error.status,
+        message: error.message,
+      });
+
+      return res.status(error.status || 500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate repository README",
+      });
+    }
+  }
+
+  static async publishRepositoryReadme(req: Request, res: Response) {
+    try {
+      const octokit = await getAuthenticatedOctokit(req);
+      const { data: githubUser } = await octokit.request("GET /user");
+      const body = req.body as any;
+      const repoOwner = body.repoOwner || githubUser.login;
+      const repoName = body.repoName;
+      const generatedReadme = body.generatedReadme;
+
+      if (!repoName || !generatedReadme) {
+        return res.status(400).json({
+          success: false,
+          message: "repoName and generatedReadme are required",
+        });
+      }
+
+      const existingFile = await getReadmeFile(octokit, repoOwner, repoName);
+      const rollbackSnapshot = existingFile
+        ? {
+            existed: true,
+            sha: existingFile.data.sha,
+            content: decodeContent(existingFile.data.content || ""),
+          }
+        : {
+            existed: false,
+            sha: "",
+            content: "",
+          };
+
+      const { data: response } = await octokit.request(
+        "PUT /repos/{owner}/{repo}/contents/{path}",
+        {
+          owner: repoOwner,
+          repo: repoName,
+          path: README_PATH,
+          message: "docs: publish AI-generated README",
+          content: encodeContent(generatedReadme),
+          sha: existingFile?.data?.sha,
+          headers: {
+            "X-GitHub-Api-Version": GITHUB_API_VERSION,
+          },
+        }
+      );
+
+      return res.json({
+        success: true,
+        repoOwner,
+        repoName,
+        rollbackSnapshot,
+        publishedSha: response?.content?.sha || null,
+        message: "README published successfully",
+      });
+    } catch (error: any) {
+      console.error("Repository README Publish Error:", {
+        status: error.status,
+        message: error.message,
+      });
+
+      return res.status(error.status || 500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to publish repository README",
+      });
+    }
+  }
+
+  static async undoRepositoryReadme(req: Request, res: Response) {
+    try {
+      const octokit = await getAuthenticatedOctokit(req);
+      const { data: githubUser } = await octokit.request("GET /user");
+      const body = req.body as any;
+      const repoOwner = body.repoOwner || githubUser.login;
+      const repoName = body.repoName;
+      const rollbackSnapshot = body.rollbackSnapshot;
+
+      if (!repoName || !rollbackSnapshot) {
+        return res.status(400).json({
+          success: false,
+          message: "repoName and rollbackSnapshot are required",
+        });
+      }
+
+      const currentFile = await getReadmeFile(octokit, repoOwner, repoName);
+
+      if (!currentFile) {
+        if (!rollbackSnapshot.existed) {
+          return res.json({
+            success: true,
+            message: "Nothing to undo. README does not exist.",
+          });
+        }
+
+        await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
+          owner: repoOwner,
+          repo: repoName,
+          path: README_PATH,
+          message: "docs: restore previous README",
+          content: encodeContent(rollbackSnapshot.content || ""),
+          headers: {
+            "X-GitHub-Api-Version": GITHUB_API_VERSION,
+          },
+        });
+      } else if (rollbackSnapshot.existed) {
+        await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
+          owner: repoOwner,
+          repo: repoName,
+          path: README_PATH,
+          message: "docs: undo AI-generated README",
+          content: encodeContent(rollbackSnapshot.content || ""),
+          sha: currentFile.data.sha,
+          headers: {
+            "X-GitHub-Api-Version": GITHUB_API_VERSION,
+          },
+        });
+      } else {
+        await octokit.request("DELETE /repos/{owner}/{repo}/contents/{path}", {
+          owner: repoOwner,
+          repo: repoName,
+          path: README_PATH,
+          message: "docs: remove AI-generated README",
+          sha: currentFile.data.sha,
+          headers: {
+            "X-GitHub-Api-Version": GITHUB_API_VERSION,
+          },
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "README changes reverted successfully",
+      });
+    } catch (error: any) {
+      console.error("Repository README Undo Error:", {
+        status: error.status,
+        message: error.message,
+      });
+
+      return res.status(error.status || 500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to undo repository README",
       });
     }
   }

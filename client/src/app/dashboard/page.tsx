@@ -368,17 +368,30 @@ export default function Page() {
                 Recover your GitHub contribution streak with auto-generated commits
               </p>
             </Link>
-            <Link
-              href="/dashboard/profile-studio"
-              className="rounded-xl border p-4 transition-all hover:-translate-y-0.5"
-              style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}
-            >
+          <Link
+            href="/dashboard/profile-studio"
+            className="rounded-xl border p-4 transition-all hover:-translate-y-0.5"
+            style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}
+          >
               <div className="flex items-center gap-2 mb-2">
                 <FaGithub size={16} style={{ color: "var(--accent)" }} />
                 <h3 className="font-semibold">Profile Studio</h3>
               </div>
               <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                Build and optimize your developer profile
+              Build and optimize your developer profile
+              </p>
+            </Link>
+            <Link
+              href="/dashboard/readme-intelligence"
+              className="rounded-xl border p-4 transition-all hover:-translate-y-0.5"
+              style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <FaGithub size={16} style={{ color: "var(--accent)" }} />
+                <h3 className="font-semibold">README Intelligence</h3>
+              </div>
+              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                Build, preview, publish, and undo AI-generated READMEs
               </p>
             </Link>
           </div>

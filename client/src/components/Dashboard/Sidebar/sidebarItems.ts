@@ -7,12 +7,13 @@ import {
   ScrollText,
   Sparkles,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 
 export type SidebarItem = {
   name: string;
   route: string;
-  icon: any;
+  icon: LucideIcon | null;
   section?: string;
 };
 
@@ -56,6 +57,12 @@ export const sidebarItems: SidebarItem[] = [
   {
     name: "Strike Recovery",
     route: "/dashboard/strike-recovery",
+    icon: Sparkles,
+    section: "Special Features",
+  },
+  {
+    name: "README Intelligence",
+    route: "/dashboard/readme-intelligence",
     icon: Sparkles,
     section: "Special Features",
   },

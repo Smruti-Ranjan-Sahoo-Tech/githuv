@@ -16,9 +16,9 @@ import {
 const features = [
   {
     icon: FaGithub,
-    title: "AI GitHub README Generator",
+    title: "AI Powered Repository Intelligence & README Generator",
     description:
-      "Generate professional profile READMEs from GitHub data, skills, education, experience, and interests.",
+      "Analyze repository metadata, folder structure, config files, and features before generating a clean README.",
     tone: "text-red-300 bg-red-500/10 border-red-500/20",
   },
   {
@@ -352,7 +352,7 @@ export default function HomePage() {
             <p className="text-sm font-bold uppercase tracking-wide text-red-300">
               Optional Advanced Modules
             </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-lg border border-white/10 bg-black/20 p-5">
                 <h3 className="font-bold">GithuV Streak Recovery</h3>
                 <p className="mt-3 text-sm leading-6 text-neutral-400">
@@ -366,6 +366,14 @@ export default function HomePage() {
                 <p className="mt-3 text-sm leading-6 text-neutral-400">
                   Preview initials, names, symbols, custom shapes, and estimate
                   the activity needed for contribution-style patterns.
+                </p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/20 p-5">
+                <h3 className="font-bold">Repository Intelligence Engine</h3>
+                <p className="mt-3 text-sm leading-6 text-neutral-400">
+                  Search your repositories, inspect repo metadata, and follow
+                  the deterministic analysis flow before the AI writes the
+                  README.
                 </p>
               </div>
             </div>

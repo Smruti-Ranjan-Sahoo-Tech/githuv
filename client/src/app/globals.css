@@ -438,6 +438,62 @@ body {
   background-color: var(--surface-input) !important;
 }
 
+[data-theme="light"] .text-zinc-200 {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .text-zinc-300 {
+  color: var(--text-label) !important;
+}
+
+[data-theme="light"] .text-zinc-400 {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .text-zinc-500 {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="light"] .text-red-300 {
+  color: var(--accent-text-hover) !important;
+}
+
+[data-theme="light"] .text-red-400 {
+  color: var(--accent) !important;
+}
+
+[data-theme="light"] .text-emerald-400 {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .border-emerald-500\/30 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-theme="light"] .border-emerald-500\/20 {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+[data-theme="light"] .bg-zinc-950 {
+  background-color: var(--surface-card) !important;
+}
+
+[data-theme="light"] .bg-zinc-950\/80 {
+  background-color: var(--surface-card) !important;
+}
+
+[data-theme="light"] .border-red-500\/30 {
+  border-color: var(--accent-border-strong) !important;
+}
+
+[data-theme="light"] .hover\:border-red-500\/30:hover {
+  border-color: var(--accent-border-strong) !important;
+}
+
+[data-theme="light"] .hover\:bg-red-500\/10:hover {
+  background-color: var(--accent-soft) !important;
+}
+
 [data-theme="light"] .hover\:bg-white\/90:hover {
   background-color: var(--surface-elevated) !important;
 }
@@ -496,6 +552,10 @@ body {
 [data-theme="light"] a.bg-white.text-black {
   background-color: var(--accent) !important;
   color: white !important;
+}
+
+.placeholder-theme::placeholder {
+  color: var(--text-tertiary);
 }
 
 @media (prefers-reduced-motion: reduce) {

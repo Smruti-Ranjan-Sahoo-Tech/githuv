@@ -12,6 +12,7 @@ export const ResumeStateAnnotation = Annotation.Root({
   pdfUrl: Annotation<string>,
   cloudinaryPublicId: Annotation<string>,
   userObjectId: Annotation<any>,
+  githubAccessToken: Annotation<string>,
 });
 
 export type ResumeState = typeof ResumeStateAnnotation.State;

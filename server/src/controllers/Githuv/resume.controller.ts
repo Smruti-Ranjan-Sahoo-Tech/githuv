@@ -14,15 +14,17 @@ class ResumeController {
   static async generateResumeByAi(req: any, res: any) {
     try {
       console.log("📌 Starting resume generation...");
-      const user = req.user;
-      console.log("✓ User:", user?.firebaseUID);
+      const authUser = req.user;
+      console.log("✓ User:", authUser?.firebaseUID);
       
       const { pageCount, themeNo } = req.body;
       console.log("✓ Parameters:", { pageCount, themeNo });
       
-      const firebaseUID = user.firebaseUID;
+      const firebaseUID = authUser.firebaseUID;
       const threadId = crypto.randomUUID();
       console.log("✓ ThreadId:", threadId);
+
+      const userRecord = await User.findOne({ firebaseUID }).select("+githubAccessToken");
 
       console.log("⏳ Invoking resume graph...");
       const result = await resumeGraph.invoke({
@@ -30,6 +32,7 @@ class ResumeController {
         threadId: threadId,
         themeNo: themeNo || "Theme1",
         pageCount: pageCount || 1,
+        githubAccessToken: userRecord?.githubAccessToken || "",
       });
       
       console.log("✓ Graph result:", { hasLatexCode: !!result.latexCode, hasPdfUrl: !!result.pdfUrl });
