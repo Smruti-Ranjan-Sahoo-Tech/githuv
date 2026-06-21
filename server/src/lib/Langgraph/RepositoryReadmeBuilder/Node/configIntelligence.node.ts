@@ -23,8 +23,8 @@ export async function configIntelligence(
   for (const filePath of CONFIG_FILES) {
     if (filePath === "*.csproj") continue;
 
-    const file = await octokit
-      .request("GET /repos/{owner}/{repo}/contents/{path}", {
+    const file = await octokit.rest.repos
+      .getContent({
         owner: state.repoOwner,
         repo: state.repoName,
         path: filePath,
@@ -38,7 +38,7 @@ export async function configIntelligence(
 
     const content = decodeBase64Content((file.data as any).content || "");
     details.filesAnalyzed.push(filePath);
-    configRawContents[filePath] = content.length > 3000 ? content.slice(0, 3000) + "\n..." : content;
+    configRawContents[filePath] = content.length > 1000 ? content.slice(0, 1000) + "\n..." : content;
 
     if (filePath === "package.json") detectPackageJson(content, details);
     if (filePath === "requirements.txt") detectRequirementsTxt(content, details);

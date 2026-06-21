@@ -8,8 +8,8 @@ export async function existingReadmeAnalyzer(
   const octokit = state.octokit;
   if (!octokit) return {};
 
-  const existingFile = await octokit
-    .request("GET /repos/{owner}/{repo}/contents/{path}", {
+  const existingFile = await octokit.rest.repos
+    .getContent({
       owner: state.repoOwner,
       repo: state.repoName,
       path: README_PATH,

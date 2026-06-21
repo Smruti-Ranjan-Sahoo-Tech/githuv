@@ -22,13 +22,13 @@ export async function importantCodeAnalyzer(
         )
       );
     })
-    .slice(0, 12);
+    .slice(0, 8);
 
   const summaries = [];
 
   for (const path of candidatePaths) {
-    const file = await octokit
-      .request("GET /repos/{owner}/{repo}/contents/{path}", {
+    const file = await octokit.rest.repos
+      .getContent({
         owner: state.repoOwner,
         repo: state.repoName,
         path,

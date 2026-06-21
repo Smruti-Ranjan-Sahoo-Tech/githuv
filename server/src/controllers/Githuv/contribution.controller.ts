@@ -48,8 +48,7 @@ async function createCommit(
 
   if (!existingSha) {
     try {
-      const existing = await octokit.request(
-        "GET /repos/{owner}/{repo}/contents/{path}",
+      const existing = await octokit.rest.repos.getContent(
         {
           owner,
           repo: REPO_NAME,
@@ -65,7 +64,7 @@ async function createCommit(
 
   const content = Buffer.from(JSON.stringify(data, null, 2)).toString("base64");
 
-  const response = await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
+  const response = await octokit.rest.repos.createOrUpdateFileContents({
     owner,
     repo: REPO_NAME,
     path: FILE_PATH,

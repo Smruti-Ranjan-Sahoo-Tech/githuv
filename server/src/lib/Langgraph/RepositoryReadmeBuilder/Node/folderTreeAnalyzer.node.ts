@@ -29,7 +29,7 @@ export async function folderTreeAnalyzer(
   const paths: string[] = ((tree.data as any).tree || [])
     .filter((item: any) => item.path && !shouldIgnorePath(item.path))
     .map((item: any) => item.path)
-    .slice(0, 350);
+    .slice(0, 150);
 
   const treeText = paths
     .map((path) => {

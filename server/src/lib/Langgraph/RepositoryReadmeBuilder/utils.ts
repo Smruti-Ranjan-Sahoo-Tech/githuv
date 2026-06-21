@@ -122,6 +122,6 @@ export function summarizeSourceFile(path: string, content: string) {
     exports: exports.slice(0, 8),
     imports: imports.slice(0, 10),
     keywords,
-    summary: truncate(topLines, 2200),
+    summary: truncate(topLines, 1200),
   };
 }

@@ -29,7 +29,9 @@ export async function askGithub(
       throw new Error(`GitHub API Error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
 
     return data.choices?.[0]?.message?.content || "";
   } catch (error) {

@@ -20,8 +20,8 @@ async function getReadmeFile(
   owner: string,
   repo: string
 ) {
-  const response = await octokit
-    .request("GET /repos/{owner}/{repo}/contents/{path}", {
+  const response = await octokit.rest.repos
+    .getContent({
       owner,
       repo,
       path: README_PATH,
@@ -64,7 +64,7 @@ async function upsertReadme(
 ) {
   const existingFile = await getReadmeFile(octokit, owner, REPO_NAME);
 
-  await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
+  await octokit.rest.repos.createOrUpdateFileContents({
     owner,
     repo: REPO_NAME,
     path: README_PATH,
@@ -352,8 +352,7 @@ export default class githuv {
             content: "",
           };
 
-      const { data: response } = await octokit.request(
-        "PUT /repos/{owner}/{repo}/contents/{path}",
+      const { data: response } = await octokit.rest.repos.createOrUpdateFileContents(
         {
           owner: repoOwner,
           repo: repoName,
@@ -417,7 +416,7 @@ export default class githuv {
           });
         }
 
-        await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
+        await octokit.rest.repos.createOrUpdateFileContents({
           owner: repoOwner,
           repo: repoName,
           path: README_PATH,
@@ -428,7 +427,7 @@ export default class githuv {
           },
         });
       } else if (rollbackSnapshot.existed) {
-        await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
+        await octokit.rest.repos.createOrUpdateFileContents({
           owner: repoOwner,
           repo: repoName,
           path: README_PATH,
@@ -440,7 +439,7 @@ export default class githuv {
           },
         });
       } else {
-        await octokit.request("DELETE /repos/{owner}/{repo}/contents/{path}", {
+        await octokit.rest.repos.deleteFile({
           owner: repoOwner,
           repo: repoName,
           path: README_PATH,
