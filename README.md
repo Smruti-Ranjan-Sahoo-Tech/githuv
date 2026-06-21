@@ -8,60 +8,39 @@ GithuV helps developers build a stronger professional presence by intelligently 
 
 ## Features
 
-### AI Resume Builder
-- Generate ATS-optimized LaTeX resumes from your GitHub profile data
-- AI-powered content generation via LangGraph state machine (GPT-4o-mini / Gemini / Ollama)
-- Manual LaTeX editor for custom resumes
-- Auto-compile to PDF via tectonic/xelatex microservice
-- Cloudinary-hosted PDFs with version management (max 50 versions)
-- ATS score estimation and improvement suggestions
+### AI-Powered Profile & README Tools
+- **AI Profile README Generator** — 6 themed templates, analyzes existing README before generating, resume-style image placement, live rendered preview with source toggle, one-click publish to your profile repo
+- **AI Repository README Generator** — Analyzes repo metadata, folder structure, configs, and features before writing a clean README
+- **AI Resume Builder** — ATS-optimized resumes from GitHub data, AI content generation, LaTeX editor, PDF export with version management, ATS scoring
+- **LinkedIn Assistant** — AI-generated headlines, about sections, posts, and branding recommendations
 
-### GitHub Analytics Dashboard
-- Real-time GitHub statistics (repos, stars, forks, followers)
-- Top language breakdown
-- Recent activity feed
-- Repository browser
+### Developer Dashboard & Analytics
+- Real-time GitHub stats (repos, stars, forks, followers, languages)
+- Career score tracking and learning progress
+- Recent activity feed and repository browser
+- AI-powered suggestions and insights
 
-### Contribution Strike Recovery
-- Restore your GitHub contribution graph with backdated commits
-- Text-to-grid patterns (5×7 pixel font rendering)
-- Custom ASCII art mapped to contribution grid
-- Random contribution patterns with configurable density
-- Single-day and daily recovery modes
-
-### Profile Studio
-- 5-step onboarding wizard
-  - Personal Information
-  - Professional Profile (headline, summary, skills, goals)
-  - Projects (portfolio with tech stacks, links, features)
-  - Experience & Education
-  - Branding (certifications, achievements, open source)
-- Circular progress tracking and step completion system
+### Project Collaboration
+- **Project Workspace** — Create projects, invite members, manage roles, track progress
+- **Team Collaboration** — Real-time individual and team chat, file sharing, notifications
+- **Todo Management** — Create, assign, prioritize, and track tasks with completion status
 
 ### AI Career Coach
-- Build personalized learning roadmaps
-- Analyze skill gaps
-- Interview preparation
-- Project planning recommendations
+- Personalized learning roadmaps based on skill gaps
+- Interview preparation and project planning recommendations
 
-### Project Workspace & Collaboration
-- Create projects, invite members, manage roles
-- Individual and team chat
-- File sharing and notifications
-- Todo management with prioritization
+### Profile Studio
+- 5-step onboarding wizard (personal info, professional profile, projects, experience, branding)
+- Circular progress tracking with step completion
 
-### LinkedIn Assistant
-- AI-generated headlines, about sections, and posts
-- Professional branding recommendations
+### Contribution Tools
+- **Streak Recovery** — Restore contribution graph with backdated commits
+- **Contribution Art Visualizer** — Plan patterns, initials, symbols with grid previews
 
-### AI GitHub Profile README Generator
-- Generate professional profile READMEs from your GitHub data via a LangGraph state machine
-- **6 themed templates**: Minimal Professional, Modern Developer, Corporate Clean, Open Source Creator, Portfolio Style, Compact Minimal
-- Analyzes your existing profile README (if present) — evaluates tone, structure, strengths, and carries forward valid content before generating an improved version
-- Resume-style profile image placement (left/right aligned) with optional animated GIF/SVG support
-- Live rendered preview (ReactMarkdown + remark-gfm) with toggle between rendered and source view
-- Shows existing README immediately on page load before any generation
-- One-click publish to your `username/username` GitHub profile repository
+### Upcoming — DevChat VS Code Extension
+- **Inline Chat** — Chat with your team directly inside VS Code. Share snippets, review PRs, and discuss changes without leaving the editor.
+- **AI Commands** — Generate READMEs, suggest commit messages, analyze code, and get career coaching from your editor.
+- **Workspace Sync** — View tasks, project boards, and team activity from VS Code. Accept invites and update status without switching contexts.
 
 ---
 

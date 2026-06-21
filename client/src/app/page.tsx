@@ -1,81 +1,48 @@
 import Link from "next/link";
 import HeroCanvas from "@/components/HeroCanvas";
-import NavAuth from "@/components/NavAuth";
+import Navbar from "@/components/Navbar";
 import {
   FaBrain,
   FaChartLine,
-  FaComments,
   FaFileAlt,
   FaGithub,
   FaLinkedin,
   FaProjectDiagram,
   FaTasks,
   FaUsers,
+  FaCode,
+  FaRocket,
+  FaFire,
 } from "react-icons/fa";
 
 const features = [
   {
     icon: FaGithub,
-    title: "AI Powered Repository Intelligence & README Generator",
+    title: "AI Profile README Generator",
     description:
-      "Analyze repository metadata, folder structure, config files, and features before generating a clean README.",
+      "Generate stunning profile READMEs with 6 themed templates. Analyzes your existing README, carries forward your best content, and publishes with one click.",
+    tone: "text-red-300 bg-red-500/10 border-red-500/20",
+  },
+  {
+    icon: FaGithub,
+    title: "AI Repository README Generator",
+    description:
+      "Analyze repository metadata, folder structure, config files, and features before generating a clean, professional README.",
     tone: "text-red-300 bg-red-500/10 border-red-500/20",
   },
   {
     icon: FaFileAlt,
     title: "AI Resume Builder",
     description:
-      "Create resumes, estimate ATS score, get improvement suggestions, and export clean PDFs.",
+      "Create ATS-optimized resumes, estimate scores, get improvement suggestions, and export clean PDFs via LaTeX.",
     tone: "text-amber-300 bg-amber-500/10 border-amber-500/20",
   },
   {
-    icon: FaLinkedin,
-    title: "LinkedIn Assistant",
+    icon: FaFire,
+    title: "Streak Recovery",
     description:
-      "Generate headlines, about sections, posts, and professional branding recommendations.",
-    tone: "text-sky-300 bg-sky-500/10 border-sky-500/20",
-  },
-  {
-    icon: FaBrain,
-    title: "AI Career Coach",
-    description:
-      "Build learning roadmaps, analyze skill gaps, prepare for interviews, and plan projects.",
-    tone: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
-  },
-  {
-    icon: FaChartLine,
-    title: "Developer Dashboard",
-    description:
-      "Track GitHub statistics, activity, career score, learning progress, and AI suggestions.",
-    tone: "text-cyan-300 bg-cyan-500/10 border-cyan-500/20",
-  },
-  {
-    icon: FaProjectDiagram,
-    title: "Project Workspace",
-    description:
-      "Create projects, invite members, manage roles, and monitor progress in one workspace.",
-    tone: "text-rose-300 bg-rose-500/10 border-rose-500/20",
-  },
-  {
-    icon: FaUsers,
-    title: "Team Collaboration",
-    description:
-      "Use individual chat, team chat, file sharing, and notifications for coordinated work.",
-    tone: "text-teal-300 bg-teal-500/10 border-teal-500/20",
-  },
-  {
-    icon: FaTasks,
-    title: "Todo Management",
-    description:
-      "Create, assign, prioritize, and track tasks with completion status and progress.",
+      "Maintain platform learning streaks through tasks, profile updates, resume improvements, roadmap milestones, and project participation.",
     tone: "text-orange-300 bg-orange-500/10 border-orange-500/20",
-  },
-  {
-    icon: FaComments,
-    title: "Contribution Visualizer",
-    description:
-      "Plan initials, names, symbols, and activity patterns with contribution-style previews.",
-    tone: "text-lime-300 bg-lime-500/10 border-lime-500/20",
   },
 ];
 
@@ -86,21 +53,6 @@ const objectives = [
   "Support LinkedIn profile growth",
   "Enable project collaboration",
   "Track learning and development progress",
-];
-
-const stack = [
-  "Next.js",
-  "React",
-  "TypeScript",
-  "Tailwind CSS",
-  "Node.js",
-  "Express",
-  "MongoDB",
-  "Firebase Auth",
-  "GitHub OAuth",
-  "Octokit",
-  "Socket.io",
-  "OpenAI APIs",
 ];
 
 function LogoMark({ compact = false }: { compact?: boolean }) {
@@ -119,23 +71,7 @@ function LogoMark({ compact = false }: { compact?: boolean }) {
 export default function HomePage() {
   return (
     <main className="min-h-screen overflow-hidden bg-neutral-950 text-white">
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-neutral-950/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <Link href="/" aria-label="GithuV home">
-            <LogoMark compact />
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <a
-              href="#features"
-              className="rounded-md px-3 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/10 hover:text-white"
-            >
-              Features
-            </a>
-            <NavAuth />
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       <section className="relative min-h-screen overflow-hidden px-5 pt-32 pb-16 lg:pt-36">
         <HeroCanvas />
@@ -146,9 +82,9 @@ export default function HomePage() {
 
         <div className="relative z-10 mx-auto max-w-7xl">
           <div className="grid items-center gap-16 lg:grid-cols-2">
-            <div className="text-center lg:text-left">
+            <div className="text-center lg:text-left page-enter">
               <div className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-100">
-                <span className="size-2 rounded-full bg-red-400" />
+                <span className="size-2 rounded-full bg-red-400 githuv-pulse-dot" />
                 AI-Powered Career Growth Platform
               </div>
 
@@ -179,7 +115,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-xl">
+            <div className="relative mx-auto w-full max-w-xl githuv-float">
               <div className="rounded-2xl border border-white/10 bg-neutral-900/90 p-5 backdrop-blur-xl">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
@@ -235,7 +171,7 @@ export default function HomePage() {
 
               <a
                 href="/login"
-                className="hover-3d hidden md:block absolute -right-6 -top-8 text-sky-200"
+                className="hover-3d hidden md:block absolute -right-6 -top-8 text-sky-200 githuv-float-delayed"
                 aria-label="Resume ATS plus AI"
               >
                 <div className="hover-3d-card rounded-xl border border-sky-500/20 bg-sky-500/10 px-4 py-3 text-sm font-semibold backdrop-blur-md">
@@ -256,7 +192,7 @@ export default function HomePage() {
 
               <a
                 href="/login"
-                className="hover-3d hidden md:block absolute -left-6 -bottom-8 text-emerald-200"
+                className="hover-3d hidden md:block absolute -left-6 -bottom-8 text-emerald-200 githuv-float"
                 aria-label="Projects plus team chat"
               >
                 <div className="hover-3d-card rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-semibold backdrop-blur-md">
@@ -280,7 +216,7 @@ export default function HomePage() {
       </section>
 
       <section id="overview" className="px-5 py-20 scroll-mt-20">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl page-enter">
           <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
             <div className="rounded-lg border border-white/10 bg-neutral-900 p-6">
               <p className="text-sm font-bold uppercase tracking-wide text-red-300">
@@ -300,7 +236,7 @@ export default function HomePage() {
               {objectives.map((objective) => (
                 <div
                   key={objective}
-                  className="rounded-lg border border-white/10 bg-neutral-900 p-4 text-sm font-medium text-neutral-200"
+                  className="rounded-lg border border-white/10 bg-neutral-900 p-4 text-sm font-medium text-neutral-200 transition duration-300 hover:border-white/20 hover:-translate-y-0.5"
                 >
                   {objective}
                 </div>
@@ -328,7 +264,7 @@ export default function HomePage() {
               return (
                 <article
                   key={feature.title}
-                  className="group rounded-lg border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-neutral-800"
+                  className="card-hover-glow group rounded-lg border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:-translate-y-1"
                 >
                   <div
                     className={`mb-5 flex size-11 items-center justify-center rounded-md border ${feature.tone}`}
@@ -347,51 +283,130 @@ export default function HomePage() {
       </section>
 
       <section className="px-5 py-20">
-        <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1fr_0.9fr]">
-          <div className="rounded-lg border border-white/10 bg-neutral-900 p-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-10 text-center">
             <p className="text-sm font-bold uppercase tracking-wide text-red-300">
-              Optional Advanced Modules
+              Coming Soon
             </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-lg border border-white/10 bg-black/20 p-5">
-                <h3 className="font-bold">GithuV Streak Recovery</h3>
-                <p className="mt-3 text-sm leading-6 text-neutral-400">
-                  Maintain platform learning streaks through tasks, profile
-                  updates, resume improvements, roadmap milestones, and project
-                  participation.
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+              DevChat — VS Code Integration
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-neutral-400">
+              Your entire GithuV workspace, now inside your editor. Collaborate, review, and manage projects without leaving VS Code.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-neutral-900 p-6 transition duration-300 hover:border-violet-500/30 hover:-translate-y-1">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                <FaCode size={20} />
+              </div>
+              <h3 className="text-lg font-bold">Inline Chat</h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                Chat with your team directly in VS Code. Share code snippets, review PRs, and discuss changes without switching contexts.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-neutral-900 p-6 transition duration-300 hover:border-violet-500/30 hover:-translate-y-1">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                <FaRocket size={20} />
+              </div>
+              <h3 className="text-lg font-bold">AI Commands</h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                Generate READMEs, suggest commit messages, analyze code, and get AI career coaching suggestions from within your editor.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-neutral-900 p-6 transition duration-300 hover:border-violet-500/30 hover:-translate-y-1">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                <FaUsers size={20} />
+              </div>
+              <h3 className="text-lg font-bold">Workspace Sync</h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                View tasks, project boards, and team activity from VS Code. Accept invites, update status, and stay in flow.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-16">
+            <p className="mb-6 text-sm font-bold uppercase tracking-wide text-neutral-500 text-center">
+              More on the Way
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-sky-500/30 hover:-translate-y-1">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg border border-sky-500/20 bg-sky-500/10 text-sky-300">
+                  <FaLinkedin size={16} />
+                </div>
+                <h3 className="font-bold">LinkedIn Assistant</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                  Generate headlines, about sections, posts, and professional branding recommendations tailored to your profile.
                 </p>
               </div>
-              <div className="rounded-lg border border-white/10 bg-black/20 p-5">
-                <h3 className="font-bold">Contribution Art Visualizer</h3>
-                <p className="mt-3 text-sm leading-6 text-neutral-400">
-                  Preview initials, names, symbols, custom shapes, and estimate
-                  the activity needed for contribution-style patterns.
+              <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-emerald-500/30 hover:-translate-y-1">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                  <FaBrain size={16} />
+                </div>
+                <h3 className="font-bold">AI Career Coach</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                  Build personalized learning roadmaps, analyze skill gaps, prepare for interviews, and plan projects.
                 </p>
               </div>
-              <div className="rounded-lg border border-white/10 bg-black/20 p-5">
-                <h3 className="font-bold">Repository Intelligence Engine</h3>
-                <p className="mt-3 text-sm leading-6 text-neutral-400">
-                  Search your repositories, inspect repo metadata, and follow
-                  the deterministic analysis flow before the AI writes the
-                  README.
+              <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-cyan-500/30 hover:-translate-y-1">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                  <FaChartLine size={16} />
+                </div>
+                <h3 className="font-bold">Developer Dashboard</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                  Track GitHub statistics, career score, learning progress, activity feed, and AI-powered suggestions in one place.
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-rose-500/30 hover:-translate-y-1">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/10 text-rose-300">
+                  <FaProjectDiagram size={16} />
+                </div>
+                <h3 className="font-bold">Project Workspace</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                  Create projects, invite members, manage roles, and monitor progress in a shared workspace.
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-teal-500/30 hover:-translate-y-1">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg border border-teal-500/20 bg-teal-500/10 text-teal-300">
+                  <FaUsers size={16} />
+                </div>
+                <h3 className="font-bold">Team Collaboration</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                  Real-time chat, file sharing, notifications, and role management for coordinated team work.
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-orange-500/30 hover:-translate-y-1">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg border border-orange-500/20 bg-orange-500/10 text-orange-300">
+                  <FaTasks size={16} />
+                </div>
+                <h3 className="font-bold">Todo Management</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                  Create, assign, prioritize, and track tasks with completion status and progress tracking.
                 </p>
               </div>
             </div>
           </div>
-
-          <div className="rounded-lg border border-white/10 bg-neutral-900 p-6">
-            <p className="text-sm font-bold uppercase tracking-wide text-red-300">
-              Technology Stack
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {stack.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-neutral-200"
-                >
-                  {item}
-                </span>
-              ))}
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-amber-500/30 hover:-translate-y-1">
+              <h3 className="font-bold">Contribution Visualizer</h3>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                Plan contribution patterns, initials, names, and custom art with real-time GitHub-style grid previews.
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-amber-500/30 hover:-translate-y-1">
+              <h3 className="font-bold">Contribution Art</h3>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                Preview initials, names, symbols, custom shapes, and estimate the activity needed for contribution-style patterns.
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-neutral-900 p-5 transition duration-300 hover:border-amber-500/30 hover:-translate-y-1">
+              <h3 className="font-bold">Repo Intelligence</h3>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                Search your repositories, inspect repo metadata, and follow the deterministic analysis flow before the AI writes the README.
+              </p>
             </div>
           </div>
         </div>
@@ -416,9 +431,14 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-white/10 px-5 py-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
           <LogoMark compact />
-          <span>GithuV - AI-Powered Career Growth Platform for Developers</span>
+          <div className="flex items-center gap-4">
+            <Link href="/about" className="transition hover:text-white">About</Link>
+            <Link href="/terms" className="transition hover:text-white">Terms</Link>
+            <Link href="/developer" className="transition hover:text-white">Developer</Link>
+          </div>
+          <span>GithuV — AI-Powered Career Growth Platform for Developers</span>
         </div>
       </footer>
     </main>
