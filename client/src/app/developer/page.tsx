@@ -1,20 +1,25 @@
+"use client";
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import { FaGithub, FaCode, FaUsers, FaEnvelope, FaRocket, FaLightbulb, FaCogs } from "react-icons/fa";
-
-const interests = [
-  "Building Full Stack & AI-powered Applications",
-  "System Design, Scaling & Advanced GenAI",
-  "Real-world products, not just projects",
-  "LangChain, LLMs & AI integrations",
-  "MERN, APIs, Auth, Realtime Apps",
-];
-
-const languages = [
-  "JavaScript", "TypeScript", "Python", "Java", "C", "C++",
-];
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import { useEffect, useState } from "react";
+import { FaGithub, FaEnvelope } from "react-icons/fa";
 
 export default function DeveloperPage() {
+  const [readme, setReadme] = useState("");
+
+  useEffect(() => {
+    fetch("https://api.github.com/repos/Smruti-Ranjan-Sahoo-Tech/Smruti-Ranjan-Sahoo-Tech/readme")
+      .then((r) => r.json())
+      .then((data) => {
+        const decoded = atob(data.content);
+        setReadme(decoded);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
       <Navbar showAuth={false} />
@@ -88,56 +93,19 @@ export default function DeveloperPage() {
         </div>
       </section>
 
-      <section className="px-5 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="grid gap-8 lg:grid-cols-2">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <FaRocket className="text-red-300" size={18} />
-                <p className="text-sm font-bold uppercase tracking-wide text-red-300">Focus Areas</p>
-              </div>
-              <div className="space-y-3">
-                {interests.map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-3 rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-3 text-sm text-neutral-300"
-                  >
-                    <span className="size-1.5 rounded-full bg-red-400 shrink-0" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <FaCode className="text-red-300" size={18} />
-                <p className="text-sm font-bold uppercase tracking-wide text-red-300">Languages</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {languages.map((lang) => (
-                  <span
-                    key={lang}
-                    className="rounded-lg border border-white/10 bg-neutral-900 px-4 py-2.5 text-sm font-medium text-neutral-200"
-                  >
-                    {lang}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <FaCogs className="text-red-300" size={18} />
-                  <p className="text-sm font-bold uppercase tracking-wide text-red-300">Current Focus</p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-neutral-900/60 p-5 text-sm leading-7 text-neutral-400">
-                  Building Production-level SaaS apps · Deep dive into System Design · Combining AI + Web Apps
-                </div>
+      {readme && (
+        <section className="px-5 py-20">
+          <div className="mx-auto max-w-4xl">
+            <div className="rounded-xl border border-white/10 bg-neutral-900/60 p-6 sm:p-10">
+              <div className="prose prose-invert max-w-none prose-headings:text-white prose-headings:font-black prose-a:text-red-300 prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-code:text-red-200 prose-img:rounded-xl prose-img:border prose-img:border-white/10">
+                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                  {readme}
+                </ReactMarkdown>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="px-5 py-20">
         <div className="mx-auto max-w-3xl text-center">
