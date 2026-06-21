@@ -1,10 +1,12 @@
 import {
   BarChart3,
   FileText,
+  FileCode2,
   FolderGit2,
   LayoutDashboard,
   Palette,
   ScrollText,
+  ShieldAlert,
   Sparkles,
   Users,
   type LucideIcon,
@@ -57,13 +59,13 @@ export const sidebarItems: SidebarItem[] = [
   {
     name: "Strike Recovery",
     route: "/dashboard/strike-recovery",
-    icon: Sparkles,
+    icon: ShieldAlert,
     section: "Special Features",
   },
   {
     name: "README Intelligence",
     route: "/dashboard/readme-intelligence",
-    icon: Sparkles,
+    icon: FileCode2,
     section: "Special Features",
   },
 ];

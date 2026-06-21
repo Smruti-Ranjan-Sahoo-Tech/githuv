@@ -30,19 +30,18 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   return (
     <aside
-      className={`flex w-72 flex-col border-r p-4 transition-transform duration-300 ease-in-out fixed inset-y-0 left-0 z-40 md:static md:translate-x-0 ${
+      className={`glass-strong flex w-72 flex-col border-r p-6 transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-50 md:static md:translate-x-0 ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}
       style={{
-        background: "var(--sidebar-bg)",
         borderColor: "var(--sidebar-border)",
       }}
     >
       {/* Mobile close button */}
       <button
-        className="mb-2 self-end rounded p-1 md:hidden"
-        onClick={onClose}
+        className="mb-2 self-end rounded-lg p-1.5 md:hidden transition-colors"
         style={{ color: "var(--sidebar-text)" }}
+        onClick={onClose}
       >
         <X size={20} />
       </button>
@@ -66,7 +65,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
       {/* Dashboard Title */}
       <div
-        className="mt-4 rounded-lg border-2 px-2 py-3 text-center font-serif text-2xl font-extrabold"
+        className="mt-6 rounded-lg border-2 px-2 py-3 text-center font-serif text-2xl font-extrabold"
         style={{ borderColor: "var(--sidebar-border)" }}
       >
         {"Dashboard".split("").map((char, index) => (
@@ -80,8 +79,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         ))}
       </div>
 
-      {/* Navigation - flex-1 to push buttons to bottom */}
-      <nav className="mt-6 flex-1 space-y-1 overflow-y-auto">
+      {/* Navigation */}
+      <nav className="mt-8 flex-1 space-y-1 overflow-y-auto px-0">
         {(() => {
           let lastSection: string | null = null;
           return sidebarItems.map((item: any) => {
@@ -90,14 +89,16 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               return (
                 <div
                   key="special-divider"
-                  className="my-3"
-                  style={{ borderTop: "1px solid var(--sidebar-border)" }}
-                />
+                  className="relative my-4"
+                >
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                  </div>
+                </div>
               );
             }
 
-            const sectionHeader =
-              item.section && item.section !== lastSection;
+            const sectionHeader = item.section && item.section !== lastSection;
             if (item.section) lastSection = item.section;
 
             const Icon = item.icon;
@@ -109,17 +110,18 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             return (
               <div key={item.route}>
                 {sectionHeader && (
-                  <p
-                    className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider"
-                    style={{ color: "var(--text-tertiary)" }}
-                  >
-                    {item.section}
-                  </p>
+                  <div className="px-4 pt-4 pb-2">
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-[0.2em] text-gradient"
+                    >
+                      {item.section}
+                    </span>
+                  </div>
                 )}
                 <Link
                   href={item.route}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all text-sm ${
-                    isActive ? "font-bold" : ""
+                  className={`group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all duration-200 ${
+                    isActive ? "sidebar-item-active font-semibold" : ""
                   }`}
                   style={{
                     background: isActive
@@ -131,8 +133,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.background =
-                        "var(--sidebar-hover)";
+                      e.currentTarget.style.background = "var(--sidebar-hover)";
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -141,7 +142,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     }
                   }}
                 >
-                  <Icon size={18} />
+                  <Icon
+                    size={18}
+                    className={`transition-transform duration-200 ${
+                      isActive ? "scale-110" : "group-hover:scale-110"
+                    }`}
+                  />
                   <span>{item.name}</span>
                 </Link>
               </div>
@@ -150,11 +156,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         })()}
       </nav>
 
-      {/* Bottom section - theme toggle + logout */}
-      <div className="space-y-2 pt-4" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
+      {/* Bottom section */}
+      <div className="space-y-1.5 pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
         <button
           onClick={toggle}
-          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all"
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all duration-200 group"
           style={{
             color: "var(--sidebar-text)",
             background: "transparent",
@@ -166,13 +172,19 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             e.currentTarget.style.background = "transparent";
           }}
         >
-          {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <div className="size-5" />}
+          {mounted ? (
+            <span className={`transition-transform duration-200 group-hover:scale-110 ${isDark ? "" : ""}`}>
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </span>
+          ) : (
+            <div className="size-[18px]" />
+          )}
           <span>{mounted ? (isDark ? "Light Mode" : "Dark Mode") : ""}</span>
         </button>
 
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all"
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all duration-200 group"
           style={{
             color: "var(--accent)",
             background: "transparent",
@@ -184,7 +196,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             e.currentTarget.style.background = "transparent";
           }}
         >
-          <LogOut size={20} />
+          <LogOut size={18} className="transition-transform duration-200 group-hover:scale-110" />
           <span>Logout</span>
         </button>
       </div>

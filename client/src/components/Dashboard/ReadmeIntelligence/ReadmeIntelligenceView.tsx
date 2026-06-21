@@ -16,6 +16,8 @@ import {
   Send,
   Sparkles,
   AlertTriangle,
+  Eye,
+  FileText,
 } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
 
@@ -223,21 +225,18 @@ export default function ReadmeIntelligenceView() {
 
   if (loading) {
     return (
-      <div
-        className="flex min-h-[70vh] items-center justify-center rounded-2xl border p-8"
-        style={{ borderColor: "var(--border-subtle)" }}
-      >
-        <p style={{ color: "var(--text-secondary)" }}>Loading README intelligence...</p>
+      <div className="flex min-h-[70vh] items-center justify-center rounded-2xl p-12">
+        <div className="flex flex-col items-center gap-4">
+          <div className="shimmer size-16 rounded-full" />
+          <div className="shimmer h-4 w-48 rounded-full" />
+        </div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div
-        className="flex min-h-[70vh] items-center justify-center rounded-2xl border p-8"
-        style={{ borderColor: "var(--border-subtle)" }}
-      >
+      <div className="flex min-h-[70vh] items-center justify-center rounded-2xl p-12">
         <p style={{ color: "var(--text-secondary)" }}>
           Please log in to use the README generator.
         </p>
@@ -248,63 +247,30 @@ export default function ReadmeIntelligenceView() {
   return (
     <div className="space-y-6">
       {/* Header section */}
-      <section
-        className="rounded-2xl border p-5"
-        style={{
-          borderColor: "var(--border-subtle)",
-          background: "var(--surface-card)",
-        }}
-      >
+      <section className="glass-border rounded-2xl p-6" style={{ background: "var(--surface-card)" }}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
-            <div
-              className="mb-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]"
-              style={{
-                borderColor: "var(--accent-border)",
-                background: "var(--accent-soft)",
-                color: "var(--accent-text)",
-              }}
-            >
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]" style={{ borderColor: "var(--accent-border)", background: "var(--accent-soft)", color: "var(--accent-text)" }}>
               <Sparkles size={14} />
               AI Powered README Generator
             </div>
-            <h1
-              className="text-2xl font-black tracking-tight sm:text-3xl"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Generate, review, and publish READMEs in one flow.
+            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+              <span className="text-gradient">Generate, review, and publish</span> READMEs in one flow.
             </h1>
-            <p
-              className="mt-3 max-w-2xl text-sm leading-6"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <p className="mt-3 max-w-2xl text-sm leading-6" style={{ color: "var(--text-secondary)" }}>
               Select a repository, describe your project, and generate a README.
               Review the result, then{" "}
-              <span
-                className="font-semibold"
-                style={{ color: "var(--accent-text-hover)" }}
-              >
-                Confirm
-              </span>{" "}
+              <span className="font-semibold" style={{ color: "var(--accent-text-hover)" }}>Confirm</span>{" "}
               to publish directly to GitHub or{" "}
-              <span
-                className="font-semibold"
-                style={{ color: "var(--text-label)" }}
-              >
-                Redo
-              </span>{" "}
+              <span className="font-semibold" style={{ color: "var(--text-label)" }}>Redo</span>{" "}
               to refine your input.
             </p>
           </div>
 
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition"
-            style={{
-              borderColor: "var(--border-subtle)",
-              background: "var(--surface-input)",
-              color: "var(--text-primary)",
-            }}
+            className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all card-hover-glow shrink-0"
+            style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)", color: "var(--text-primary)" }}
           >
             <ArrowLeft size={14} />
             Back to dashboard
@@ -312,64 +278,24 @@ export default function ReadmeIntelligenceView() {
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div
-            className="rounded-xl border p-4"
-            style={{
-              borderColor: "var(--border-subtle)",
-              background: "var(--surface-elevated)",
-            }}
-          >
-            <p
-              className="text-xs uppercase tracking-wide"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              Repository
-            </p>
-            <p
-              className="mt-1 truncate text-lg font-bold"
-              style={{ color: "var(--text-primary)" }}
-            >
+          <div className="rounded-xl p-4 stat-card" style={{ animationDelay: "0s" }}>
+            <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>Repository</p>
+            <p className="mt-1 truncate text-lg font-bold" style={{ color: "var(--text-primary)" }}>
               {activeRepo?.name || "-"}
             </p>
           </div>
-          <div
-            className="rounded-xl border p-4"
-            style={{
-              borderColor: "var(--border-subtle)",
-              background: "var(--surface-elevated)",
-            }}
-          >
-            <p
-              className="text-xs uppercase tracking-wide"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              Status
-            </p>
-            <p
-              className="mt-1 text-lg font-bold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              {published
-                ? "Published"
-                : mode === "result"
-                  ? "Generated"
-                  : "Ready"}
+          <div className="rounded-xl p-4 stat-card" style={{ animationDelay: "0.05s" }}>
+            <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>Status</p>
+            <p className="mt-1 text-lg font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+              <span className={`status-dot ${!(published ? true : mode === "result") ? "opacity-30" : ""}`} />
+              {published ? "Published" : mode === "result" ? "Generated" : "Ready"}
             </p>
           </div>
-          <div
-            className="rounded-xl border p-4"
-            style={{
-              borderColor: "var(--border-subtle)",
-              background: "var(--surface-elevated)",
-            }}
-          >
-            <p
-              className="text-xs uppercase tracking-wide"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              Validation
+          <div className="rounded-xl p-4 stat-card" style={{ animationDelay: "0.1s" }}>
+            <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>Validation</p>
+            <p className={`mt-1 text-2xl font-bold ${validation ? validation.score >= 70 ? "text-emerald-400" : validation.score >= 40 ? "text-yellow-400" : "" : ""}`}>
+              {validation ? `${validation.score}/100` : "—"}
             </p>
-            <p className="mt-1 text-2xl font-bold">0/100</p>
           </div>
         </div>
       </section>
@@ -378,84 +304,42 @@ export default function ReadmeIntelligenceView() {
         <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
           {/* Repo selection column */}
           <div className="space-y-6">
-            <div
-              className="rounded-2xl border p-5"
-              style={{
-                borderColor: "var(--border-subtle)",
-                background: "var(--surface-card)",
-              }}
-            >
-              <label
-                htmlFor="repo-search"
-                className="mb-2 block text-sm font-medium"
-                style={{ color: "var(--text-label)" }}
-              >
+            <div className="glass-border rounded-2xl p-5 card-hover-glow" style={{ background: "var(--surface-card)" }}>
+              <label htmlFor="repo-search" className="mb-2 block text-sm font-medium" style={{ color: "var(--text-label)" }}>
                 Search repository
               </label>
-              <div
-                className="flex items-center gap-3 rounded-xl border px-4 py-3"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  background: "var(--surface-input)",
-                }}
-              >
+              <div className="flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors focus-within:border-accent-border-strong" style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)" }}>
                 <Search size={18} style={{ color: "var(--text-tertiary)" }} />
-                  <input
-                    id="repo-search"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Type a repo name"
-                    className="w-full bg-transparent text-sm outline-none placeholder-theme"
-                    style={{ color: "var(--text-primary)" }}
-                  />
+                <input
+                  id="repo-search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Type a repo name"
+                  className="w-full bg-transparent text-sm outline-none placeholder-theme"
+                  style={{ color: "var(--text-primary)" }}
+                />
               </div>
-              <p
-                className="mt-3 text-xs"
-                style={{ color: "var(--text-tertiary)" }}
-              >
+              <p className="mt-3 text-xs" style={{ color: "var(--text-tertiary)" }}>
                 Click a repository to load it into the generator.
               </p>
             </div>
 
-            <div
-              className="rounded-2xl border p-5"
-              style={{
-                borderColor: "var(--border-subtle)",
-                background: "var(--surface-card)",
-              }}
-            >
+            <div className="glass-border rounded-2xl p-5 card-hover-glow" style={{ background: "var(--surface-card)" }}>
               <div className="mb-4 flex items-center gap-2">
-                <FaGithub size={18} style={{ color: "var(--accent)" }} />
-                <h2
-                  className="text-lg font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  Your repositories
-                </h2>
+                <div className="flex size-8 items-center justify-center rounded-lg" style={{ background: "var(--accent-soft)" }}>
+                  <FaGithub size={16} style={{ color: "var(--accent)" }} />
+                </div>
+                <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Your repositories</h2>
               </div>
 
               {ghLoading && (
-                <div
-                  className="rounded-xl border p-4 text-sm"
-                  style={{
-                    borderColor: "var(--border-subtle)",
-                    background: "var(--surface-elevated)",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  Fetching repositories...
+                <div className="flex items-center justify-center py-8">
+                  <div className="shimmer h-4 w-40 rounded-full" />
                 </div>
               )}
 
               {error && (
-                <div
-                  className="rounded-xl border p-4 text-sm"
-                  style={{
-                    borderColor: "var(--accent-border)",
-                    background: "var(--accent-soft)",
-                    color: "var(--accent-text)",
-                  }}
-                >
+                <div className="rounded-xl border p-4 text-sm" style={{ borderColor: "var(--accent-border)", background: "var(--accent-soft)", color: "var(--accent-text)" }}>
                   Failed to load repositories: {error}
                 </div>
               )}
@@ -463,58 +347,34 @@ export default function ReadmeIntelligenceView() {
               <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto pr-1">
                 {filteredRepos.map((repo) => {
                   const isActive = activeRepo?.full_name === repo.full_name;
-
                   return (
                     <button
                       key={repo.full_name}
                       onClick={() => setSelectedRepo(repo)}
-                      className="w-full rounded-xl border p-4 text-left transition hover:-translate-y-0.5"
+                      className={`w-full rounded-xl border p-4 text-left transition-all duration-200 ${
+                        isActive ? "border-gradient" : "card-hover-glow"
+                      }`}
                       style={{
-                        borderColor: isActive
-                          ? "var(--accent-border-strong)"
-                          : "var(--border-subtle)",
-                        background: isActive
-                          ? "var(--accent-soft)"
-                          : "var(--surface-elevated)",
+                        borderColor: isActive ? "transparent" : "var(--border-subtle)",
+                        background: isActive ? "var(--accent-soft)" : "var(--surface-elevated)",
                       }}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p
-                            className="truncate text-sm font-semibold"
-                            style={{ color: "var(--text-primary)" }}
-                          >
+                          <p className="truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                             {repo.name}
                           </p>
-                          <p
-                            className="mt-1 line-clamp-2 text-xs"
-                            style={{ color: "var(--text-secondary)" }}
-                          >
+                          <p className="mt-1 line-clamp-2 text-xs" style={{ color: "var(--text-secondary)" }}>
                             {repo.description || "No description added yet."}
                           </p>
                         </div>
-                        <span
-                          className="shrink-0 rounded-full border px-2 py-1 text-[10px] uppercase tracking-wide"
-                          style={{
-                            borderColor: "var(--border-subtle)",
-                            color: "var(--text-label)",
-                          }}
-                        >
+                        <span className="shrink-0 rounded-full border px-2 py-1 text-[10px] uppercase tracking-wide" style={{ borderColor: "var(--border-subtle)", color: "var(--text-label)" }}>
                           {repo.private ? "Private" : "Public"}
                         </span>
                       </div>
-                      <div
-                        className="mt-3 flex flex-wrap items-center gap-2 text-xs"
-                        style={{ color: "var(--text-tertiary)" }}
-                      >
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
                         {repo.language && (
-                          <span
-                            className="rounded-full border px-2 py-1"
-                            style={{
-                              borderColor: "var(--border-subtle)",
-                              background: "var(--surface-input)",
-                            }}
-                          >
+                          <span className="rounded-full border px-2 py-1" style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)" }}>
                             {repo.language}
                           </span>
                         )}
@@ -528,14 +388,7 @@ export default function ReadmeIntelligenceView() {
                 })}
 
                 {filteredRepos.length === 0 && !ghLoading && !error && (
-                  <div
-                    className="rounded-xl border border-dashed p-4 text-sm"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                      background: "var(--surface-elevated)",
-                      color: "var(--text-tertiary)",
-                    }}
-                  >
+                  <div className="rounded-xl border border-dashed p-4 text-sm" style={{ borderColor: "var(--border-subtle)", color: "var(--text-tertiary)" }}>
                     No repositories found.
                   </div>
                 )}
@@ -545,27 +398,17 @@ export default function ReadmeIntelligenceView() {
 
           {/* Input form column */}
           <div className="space-y-6">
-            <div
-              className="rounded-2xl border p-5"
-              style={{
-                borderColor: "var(--border-subtle)",
-                background: "var(--surface-card)",
-              }}
-            >
+            <div className="glass-border rounded-2xl p-6 card-hover-glow" style={{ background: "var(--surface-card)" }}>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2
-                    className="text-lg font-bold"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    Project context
-                  </h2>
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--text-tertiary)" }}
-                  >
-                    Describe your project so the AI can write a meaningful
-                    README.
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="flex size-8 items-center justify-center rounded-lg" style={{ background: "var(--accent-soft)" }}>
+                      <FileText size={16} style={{ color: "var(--accent)" }} />
+                    </div>
+                    <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Project context</h2>
+                  </div>
+                  <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
+                    Describe your project so the AI can write a meaningful README.
                   </p>
                 </div>
                 {selectedRepo && (
@@ -573,115 +416,78 @@ export default function ReadmeIntelligenceView() {
                     href={selectedRepo.html_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                      background: "var(--surface-input)",
-                      color: "var(--text-primary)",
-                    }}
+                    className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-all card-hover-glow"
+                    style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)", color: "var(--text-primary)" }}
                   >
-                    Open on GitHub <FaGithub />
+                    Open on GitHub <FaGithub size={14} />
                   </a>
                 )}
               </div>
 
               <div className="grid gap-4">
                 <label className="block">
-                  <span
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-label)" }}
-                  >
-                    Project purpose *
+                  <span className="mb-2 block text-sm font-medium" style={{ color: "var(--text-label)" }}>
+                    Project purpose <span style={{ color: "var(--accent)" }}>*</span>
                   </span>
                   <textarea
                     value={projectPurpose}
                     onChange={(event) => setProjectPurpose(event.target.value)}
                     rows={3}
                     placeholder="Example: GitHub-first developer growth platform"
-                    className="w-full rounded-xl border px-4 py-3 text-sm outline-none placeholder-theme"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                      background: "var(--surface-input)",
-                      color: "var(--text-primary)",
-                    }}
+                    className="w-full rounded-xl border px-4 py-3 text-sm outline-none placeholder-theme transition-colors focus:border-accent-border-strong"
+                    style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)", color: "var(--text-primary)" }}
                   />
                 </label>
 
                 <label className="block">
-                  <span
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-label)" }}
-                  >
+                  <span className="mb-2 block text-sm font-medium" style={{ color: "var(--text-label)" }}>
                     Key features
                   </span>
                   <input
                     value={keyFeatures}
                     onChange={(event) => setKeyFeatures(event.target.value)}
                     placeholder="Streak recovery, notifications, collaboration spaces"
-                    className="w-full rounded-xl border px-4 py-3 text-sm outline-none placeholder-theme"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                      background: "var(--surface-input)",
-                      color: "var(--text-primary)",
-                    }}
+                    className="w-full rounded-xl border px-4 py-3 text-sm outline-none placeholder-theme transition-colors focus:border-accent-border-strong"
+                    style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)", color: "var(--text-primary)" }}
                   />
-                  <span
-                    className="mt-2 block text-xs"
-                    style={{ color: "var(--text-tertiary)" }}
-                  >
+                  <span className="mt-2 block text-xs" style={{ color: "var(--text-tertiary)" }}>
                     Separate features with commas.
                   </span>
                 </label>
 
                 <label className="block">
-                  <span
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-label)" }}
-                  >
+                  <span className="mb-2 block text-sm font-medium" style={{ color: "var(--text-label)" }}>
                     Target users
                   </span>
                   <input
                     value={targetUsers}
                     onChange={(event) => setTargetUsers(event.target.value)}
                     placeholder="Developers, students, teams"
-                    className="w-full rounded-xl border px-4 py-3 text-sm outline-none placeholder-theme"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                      background: "var(--surface-input)",
-                      color: "var(--text-primary)",
-                    }}
+                    className="w-full rounded-xl border px-4 py-3 text-sm outline-none placeholder-theme transition-colors focus:border-accent-border-strong"
+                    style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)", color: "var(--text-primary)" }}
                   />
                 </label>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-6">
                 <button
                   onClick={handleGenerate}
                   disabled={generating || !selectedRepo}
-                  className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{
-                    background: "var(--accent)",
-                    color: "#ffffff",
-                  }}
+                  className="glow-accent inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+                  style={{ background: "var(--accent)", color: "#ffffff" }}
                 >
                   {generating ? (
-                    <Loader2 className="animate-spin" size={16} />
+                    <Loader2 className="animate-spin" size={18} />
                   ) : (
-                    <Sparkles size={16} />
+                    <Sparkles size={18} />
                   )}
-                  Generate README
+                  {generating ? "Generating..." : "Generate README"}
                 </button>
               </div>
 
               {errorMessage && (
-                <div
-                  className="mt-4 rounded-xl border p-3 text-sm"
-                  style={{
-                    borderColor: "var(--accent-border)",
-                    background: "var(--accent-soft)",
-                    color: "var(--accent-text)",
-                  }}
-                >
+                <div className="mt-4 rounded-xl border p-3 text-sm flex items-center gap-2" style={{ borderColor: "var(--accent-border)", background: "var(--accent-soft)", color: "var(--accent-text)" }}>
+                  <AlertTriangle size={14} className="shrink-0" />
                   {errorMessage}
                 </div>
               )}
@@ -691,38 +497,24 @@ export default function ReadmeIntelligenceView() {
       ) : (
         <section className="space-y-6">
           {/* Generated README display */}
-          <div
-            className="rounded-2xl border p-5"
-            style={{
-              borderColor: "var(--border-subtle)",
-              background: "var(--surface-card)",
-            }}
-          >
-            <div className="mb-4 flex items-center justify-between">
+          <div className="glass-border rounded-2xl p-5 card-hover-glow" style={{ background: "var(--surface-card)" }}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2
-                  className="text-lg font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  Generated README
-                </h2>
-                <p
-                  className="text-sm"
-                  style={{ color: "var(--text-secondary)" }}
-                >
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="flex size-8 items-center justify-center rounded-lg" style={{ background: "var(--accent-soft)" }}>
+                    <Eye size={16} style={{ color: "var(--accent)" }} />
+                  </div>
+                  <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Generated README</h2>
+                </div>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                   {activeRepo?.full_name} — Review the result below
                 </p>
               </div>
               {validation && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 rounded-xl border px-4 py-2" style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)" }}>
+                  <span className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>Score</span>
                   <span
-                    className="text-sm"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
-                    Score:
-                  </span>
-                  <span
-                    className="text-lg font-black"
+                    className="text-lg font-black tabular-nums"
                     style={{
                       color:
                         validation.score >= 70
@@ -738,7 +530,7 @@ export default function ReadmeIntelligenceView() {
               )}
             </div>
             <pre
-              className="max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-xl border p-5 font-mono text-sm leading-6"
+              className="max-h-[36rem] overflow-auto whitespace-pre-wrap rounded-2xl border p-6 font-mono text-sm leading-6"
               style={{
                 borderColor: "var(--border-subtle)",
                 background: "var(--surface)",
@@ -751,82 +543,40 @@ export default function ReadmeIntelligenceView() {
 
           {/* Validation details */}
           {validation && (
-            <div
-              className="rounded-2xl border p-5"
-              style={{
-                borderColor: "var(--border-subtle)",
-                background: "var(--surface-card)",
-              }}
-            >
-              <h3
-                className="text-sm font-semibold"
-                style={{ color: "var(--text-label)" }}
-              >
+            <div className="glass-border rounded-2xl p-5 card-hover-glow" style={{ background: "var(--surface-card)" }}>
+              <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-label)" }}>
+                <CheckCircle2 size={14} style={{ color: "var(--accent)" }} />
                 README Quality Check
               </h3>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p
-                    className="text-xs font-medium uppercase tracking-wide"
-                    style={{ color: "var(--text-tertiary)" }}
-                  >
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-subtle)", background: "var(--surface-elevated)" }}>
+                  <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: "var(--text-tertiary)" }}>
                     Present sections
                   </p>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5">
                     {validation.presentSections.length > 0
                       ? validation.presentSections.map((s) => (
-                          <span
-                            key={s}
-                            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                            style={{
-                              background: "rgba(16, 185, 129, 0.1)",
-                              color: "#10b981",
-                            }}
-                          >
+                          <span key={s} className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: "rgba(16, 185, 129, 0.1)", color: "#10b981" }}>
                             <CheckCircle2 size={10} />
                             {s}
                           </span>
                         ))
-                      : (
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--text-tertiary)" }}
-                        >
-                          None detected
-                        </span>
-                      )}
+                      : <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>None detected</span>}
                   </div>
                 </div>
-                <div>
-                  <p
-                    className="text-xs font-medium uppercase tracking-wide"
-                    style={{ color: "var(--text-tertiary)" }}
-                  >
+                <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-subtle)", background: "var(--surface-elevated)" }}>
+                  <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: "var(--text-tertiary)" }}>
                     Missing sections
                   </p>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5">
                     {validation.missingSections.length > 0
                       ? validation.missingSections.map((s) => (
-                          <span
-                            key={s}
-                            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                            style={{
-                              background: "var(--accent-soft)",
-                              color: "var(--accent-text-hover)",
-                            }}
-                          >
+                          <span key={s} className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: "var(--accent-soft)", color: "var(--accent-text-hover)" }}>
                             <AlertTriangle size={10} />
                             {s}
                           </span>
                         ))
-                      : (
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--text-tertiary)" }}
-                        >
-                          None — all sections present
-                        </span>
-                      )}
+                      : <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>None — all sections present</span>}
                   </div>
                 </div>
               </div>
@@ -834,62 +584,31 @@ export default function ReadmeIntelligenceView() {
           )}
 
           {message && !published && (
-            <div
-              className="rounded-xl border p-3 text-sm"
-              style={{
-                borderColor: "rgba(16, 185, 129, 0.2)",
-                background: "rgba(16, 185, 129, 0.1)",
-                color: "#059669",
-              }}
-            >
+            <div className="rounded-xl border p-3 text-sm flex items-center gap-2" style={{ borderColor: "rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.1)", color: "#059669" }}>
+              <Loader2 className="animate-spin shrink-0" size={14} />
               {message}
             </div>
           )}
 
           {errorMessage && (
-            <div
-              className="rounded-xl border p-3 text-sm"
-              style={{
-                borderColor: "var(--accent-border)",
-                background: "var(--accent-soft)",
-                color: "var(--accent-text)",
-              }}
-            >
+            <div className="rounded-xl border p-3 text-sm flex items-center gap-2" style={{ borderColor: "var(--accent-border)", background: "var(--accent-soft)", color: "var(--accent-text)" }}>
+              <AlertTriangle size={14} className="shrink-0" />
               {errorMessage}
             </div>
           )}
 
-          {/* Confirm / Redo - highlighted action area */}
+          {/* Confirm / Redo */}
           {!published && (
-            <div
-              className="rounded-2xl border-2 p-6"
-              style={{
-                borderColor: "var(--accent-border-strong)",
-                background: "var(--accent-soft)",
-              }}
-            >
+            <div className="glass-border rounded-2xl p-6" style={{ background: "var(--accent-soft)" }}>
               <div className="mb-4 flex items-center gap-3">
-                <div
-                  className="flex size-10 items-center justify-center rounded-full"
-                  style={{ background: "var(--accent)" }}
-                >
-                  <Sparkles size={18} className="text-white" />
+                <div className="flex size-12 items-center justify-center rounded-2xl glow-accent" style={{ background: "var(--accent)" }}>
+                  <Sparkles size={20} className="text-white" />
                 </div>
                 <div>
-                  <h3
-                    className="text-base font-bold"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    Ready to publish?
-                  </h3>
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
+                  <h3 className="text-base font-bold text-gradient">Ready to publish?</h3>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                     Confirm to push this README to{" "}
-                    <span className="font-semibold">
-                      {activeRepo?.full_name}
-                    </span>{" "}
+                    <span className="font-semibold">{activeRepo?.full_name}</span>{" "}
                     on GitHub, or redo to go back and refine.
                   </p>
                 </div>
@@ -898,31 +617,23 @@ export default function ReadmeIntelligenceView() {
                 <button
                   onClick={handlePublish}
                   disabled={publishing}
-                  className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{
-                    background: "var(--accent)",
-                    color: "#ffffff",
-                  }}
+                  className="glow-accent inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+                  style={{ background: "var(--accent)", color: "#ffffff" }}
                 >
                   {publishing ? (
-                    <Loader2 className="animate-spin" size={16} />
+                    <Loader2 className="animate-spin" size={18} />
                   ) : (
-                    <Send size={16} />
+                    <Send size={18} />
                   )}
                   {publishing ? "Publishing..." : "Confirm & Publish"}
                 </button>
-
                 <button
                   onClick={handleRedo}
                   disabled={publishing}
-                  className="inline-flex items-center gap-2 rounded-xl border px-6 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{
-                    borderColor: "var(--border-subtle)",
-                    background: "var(--surface-input)",
-                    color: "var(--text-primary)",
-                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border px-6 py-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 card-hover-glow"
+                  style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)", color: "var(--text-primary)" }}
                 >
-                  <RefreshCcw size={16} />
+                  <RefreshCcw size={18} />
                   Redo
                 </button>
               </div>
@@ -931,54 +642,37 @@ export default function ReadmeIntelligenceView() {
 
           {/* Published success state */}
           {published && (
-            <div
-              className="rounded-2xl border p-6"
-              style={{
-                borderColor: "rgba(16, 185, 129, 0.3)",
-                background: "rgba(16, 185, 129, 0.1)",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <CheckCircle2 size={24} style={{ color: "#10b981" }} />
+            <div className="glass-border rounded-2xl p-6" style={{ background: "rgba(16, 185, 129, 0.08)" }}>
+              <div className="flex items-center gap-4">
+                <div className="flex size-14 items-center justify-center rounded-2xl" style={{ background: "rgba(16, 185, 129, 0.15)" }}>
+                  <CheckCircle2 size={28} style={{ color: "#10b981" }} />
+                </div>
                 <div>
-                  <h3
-                    className="text-lg font-bold"
-                    style={{ color: "#059669" }}
-                  >
-                    Published successfully!
-                  </h3>
+                  <h3 className="text-xl font-bold" style={{ color: "#10b981" }}>Published successfully!</h3>
                   <p className="text-sm" style={{ color: "#059669" }}>
                     README has been committed to {activeRepo?.full_name}
                   </p>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-5 flex flex-wrap gap-3">
                 {activeRepo && (
                   <a
                     href={activeRepo.html_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                      background: "var(--surface-input)",
-                      color: "var(--text-primary)",
-                    }}
+                    className="inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-[1.02] card-hover-glow"
+                    style={{ borderColor: "var(--border-subtle)", background: "var(--surface-input)", color: "var(--text-primary)" }}
                   >
-                    <ExternalLink size={14} />
+                    <ExternalLink size={16} />
                     View on GitHub
                   </a>
                 )}
                 <button
                   onClick={handleRedo}
-                  className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition"
-                  style={{
-                    borderColor: "var(--border-subtle)",
-                    background: "var(--surface-input)",
-                    color: "var(--text-primary)",
-                  }}
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-[1.02]"
+                  style={{ background: "var(--accent)", color: "#ffffff" }}
                 >
-                  <RefreshCcw size={14} />
+                  <RefreshCcw size={16} />
                   Generate another
                 </button>
               </div>

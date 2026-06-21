@@ -1,86 +1,3 @@
-// "use client";
-
-// import { useEffect } from "react";
-// import { useRouter } from "next/navigation";
-// import { useFirebaseAuthStore } from "@/store/useFirebaseAuthStore";
-
-// const DashboardPage = () => {
-//   const { user, githubAccessToken, loading, initialLoginCheck, logout } =
-//     useFirebaseAuthStore();
-//   const router = useRouter();
-
-//   useEffect(() => {
-//     const unsubscribe = initialLoginCheck();
-//     return unsubscribe;
-//   }, [initialLoginCheck]);
-
-//   useEffect(() => {
-//     if (user) {
-//       console.log("Firebase user:", user);
-//     }
-//   }, [user]);
-
-//   const handleLogout = async () => {
-//     const success = await logout();
-//     if (success) {
-//       router.push("/login");
-//     }
-//   };
-
-//   if (loading) {
-//     return <div className="p-8">Loading...</div>;
-//   }
-
-//   if (!user) {
-//     router.push("/login");
-//     return null;
-//   }
-
-//   return (
-//     <div className="p-8 max-w-2xl mx-auto">
-//       <div className="flex items-center justify-between mb-6">
-//         <h1 className="text-3xl font-bold">Dashboard</h1>
-//         <button
-//           onClick={handleLogout}
-//           className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition"
-//         >
-//           Logout
-//         </button>
-//       </div>
-
-//       <div className="bg-gray-100 rounded-lg p-6 mb-6">
-//         <h2 className="text-xl font-semibold mb-4">User Information</h2>
-//         <div className="space-y-3">
-//           <div>
-//             <p className="text-gray-600 text-sm">Email</p>
-//             <p className="text-lg font-medium">{user.email}</p>
-//           </div>
-//           <div>
-//             <p className="text-gray-600 text-sm">Display Name</p>
-//             <p className="text-lg font-medium">{user.displayName || "N/A"}</p>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="bg-blue-100 rounded-lg p-6">
-//         <h2 className="text-xl font-semibold mb-4">GitHub Access Token</h2>
-//         {githubAccessToken ? (
-//           <div>
-//             <p className="text-gray-600 text-sm mb-2">Token (hidden for security)</p>
-//             <p className="text-sm font-mono bg-white p-3 rounded border border-blue-300 break-all">
-//               {githubAccessToken.substring(0, 10)}...{githubAccessToken.substring(githubAccessToken.length - 10)}
-//             </p>
-//             <p className="text-xs text-gray-500 mt-2">Full token length: {githubAccessToken.length} characters</p>
-//           </div>
-//         ) : (
-//           <p className="text-gray-600">No GitHub token available</p>
-//         )}
-//       </div>
-//     </div>
-//   )
-// };
-
-// export default DashboardPage;
 "use client";
 
 import { useFirebaseAuthStore } from "@/store/useFirebaseAuthStore";
@@ -92,18 +9,20 @@ import {
   FaStar,
   FaCodeBranch,
   FaBook,
-  FaUsers,
+  FaUserFriends,
   FaCode,
   FaExternalLinkAlt,
-  FaUserFriends,
   FaMapMarkerAlt,
   FaTwitter,
   FaBuilding,
+  FaRocket,
+  FaLightbulb,
+  FaMagic,
 } from "react-icons/fa";
 
 
 export default function Page() {
-  const { user, loading, initialLoginCheck, logout } =
+  const { user, loading, initialLoginCheck } =
     useFirebaseAuthStore();
   const { data, loading: ghLoading, error, fetchDashboardData } = useGithubDataStore();
 
@@ -120,50 +39,85 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="border border-zinc-800 rounded-2xl p-6 min-h-[90vh] flex items-center justify-center">
-        <p className="text-xl">Loading...</p>
+      <div className="flex min-h-[80vh] items-center justify-center rounded-2xl p-12">
+        <div className="flex flex-col items-center gap-4">
+          <div className="shimmer size-16 rounded-full" />
+          <div className="shimmer h-4 w-48 rounded-full" />
+          <div className="shimmer h-3 w-32 rounded-full" />
+        </div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="border border-zinc-800 rounded-2xl p-6 min-h-[90vh] flex items-center justify-center">
-        <p className="text-xl">Please log in to see the dashboard</p>
+      <div className="flex min-h-[80vh] items-center justify-center rounded-2xl p-12">
+        <p style={{ color: "var(--text-secondary)" }}>Please log in to see the dashboard</p>
       </div>
     );
   }
 
+  const quickLinks = [
+    {
+      href: "/dashboard/strike-recovery",
+      label: "Strike Recovery",
+      desc: "Recover your GitHub contribution streak",
+      icon: FaRocket,
+      gradient: "from-orange-500 to-red-500",
+    },
+    {
+      href: "/dashboard/profile-studio",
+      label: "Profile Studio",
+      desc: "Build and optimize your developer profile",
+      icon: FaMagic,
+      gradient: "from-purple-500 to-pink-500",
+    },
+    {
+      href: "/dashboard/readme-intelligence",
+      label: "README Intelligence",
+      desc: "Build, preview, and publish AI READMEs",
+      icon: FaLightbulb,
+      gradient: "from-blue-500 to-cyan-500",
+    },
+  ];
+
+  const statCards = data ? [
+    { label: "Repositories", value: data.stats.totalRepos, icon: FaBook },
+    { label: "Stars", value: data.stats.totalStars, icon: FaStar },
+    { label: "Forks", value: data.stats.totalForks, icon: FaCodeBranch },
+    { label: "Followers", value: data.profile.followers, icon: FaUserFriends },
+  ] : [];
+
   return (
-    <div className="border border-zinc-800 rounded-2xl p-4 sm:p-6 min-h-[90vh]">
-      {/* Header */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Developer Dashboard</h1>
-        <button
-          onClick={logout}
-          className="ml-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-        >
-          Logout
-        </button>
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight">
+            <span className="text-gradient">Dashboard</span>
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
+            Welcome back, {data?.profile?.name || user?.displayName || "Developer"}
+          </p>
+        </div>
       </div>
 
       {ghLoading && (
         <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-3">
-            <FaGithub className="text-4xl animate-pulse" style={{ color: "var(--accent)" }} />
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Fetching your GitHub data...
-            </p>
+          <div className="flex flex-col items-center gap-4">
+            <FaGithub className="text-5xl" style={{ color: "var(--accent)" }} />
+            <div className="shimmer h-4 w-48 rounded-full" />
           </div>
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-5 mb-6">
-          <p className="text-sm text-red-200">Failed to load GitHub data: {error}</p>
+        <div className="rounded-2xl border p-5 card-hover-glow" style={{ borderColor: "var(--accent-border)", background: "var(--accent-soft)" }}>
+          <p className="text-sm" style={{ color: "var(--accent-text)" }}>Failed to load GitHub data: {error}</p>
           <button
             onClick={() => fetchDashboardData()}
-            className="mt-2 text-sm text-red-300 underline hover:text-red-200"
+            className="mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+            style={{ background: "var(--accent)", color: "#fff" }}
           >
             Retry
           </button>
@@ -173,14 +127,17 @@ export default function Page() {
       {data && (
         <>
           {/* Profile Card */}
-          <div className="rounded-xl border p-5 mb-6" style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}>
+          <div className="glass-border rounded-2xl p-6 card-hover-glow" style={{ background: "var(--surface-card)" }}>
             <div className="flex flex-col sm:flex-row items-start gap-5">
-              <img
-                src={data.profile.avatar_url}
-                alt={data.profile.login}
-                className="size-20 rounded-full border-2"
-                style={{ borderColor: "var(--border-subtle)" }}
-              />
+              <div className="relative shrink-0">
+                <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-red-500 to-rose-400 opacity-60 blur-md" />
+                <img
+                  src={data.profile.avatar_url}
+                  alt={data.profile.login}
+                  className="relative size-20 rounded-full border-2"
+                  style={{ borderColor: "var(--border-subtle)" }}
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h2 className="text-xl font-bold">{data.profile.name || data.profile.login}</h2>
@@ -188,10 +145,10 @@ export default function Page() {
                     href={`https://github.com/${data.profile.login}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm hover:underline inline-flex items-center gap-1"
-                    style={{ color: "var(--accent)" }}
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-xs font-medium transition-colors"
+                    style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
                   >
-                    @{data.profile.login} <FaExternalLinkAlt size={10} />
+                    @{data.profile.login} <FaExternalLinkAlt size={8} />
                   </a>
                 </div>
                 {data.profile.bio && (
@@ -201,13 +158,13 @@ export default function Page() {
                 )}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm" style={{ color: "var(--text-tertiary)" }}>
                   {data.profile.company && (
-                    <span className="inline-flex items-center gap-1">
-                      <FaBuilding size={12} /> {data.profile.company}
+                    <span className="inline-flex items-center gap-1.5">
+                      <FaBuilding size={11} /> {data.profile.company}
                     </span>
                   )}
                   {data.profile.location && (
-                    <span className="inline-flex items-center gap-1">
-                      <FaMapMarkerAlt size={12} /> {data.profile.location}
+                    <span className="inline-flex items-center gap-1.5">
+                      <FaMapMarkerAlt size={11} /> {data.profile.location}
                     </span>
                   )}
                   {data.profile.twitter_username && (
@@ -215,10 +172,10 @@ export default function Page() {
                       href={`https://twitter.com/${data.profile.twitter_username}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 hover:underline"
+                      className="inline-flex items-center gap-1.5 hover:underline"
                       style={{ color: "var(--accent)" }}
                     >
-                      <FaTwitter size={12} /> @{data.profile.twitter_username}
+                      <FaTwitter size={11} /> @{data.profile.twitter_username}
                     </a>
                   )}
                 </div>
@@ -227,50 +184,38 @@ export default function Page() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}>
-              <div className="flex items-center gap-2 mb-1">
-                <FaBook size={14} style={{ color: "var(--accent)" }} />
-                <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>Repos</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {statCards.map((stat, idx) => (
+              <div key={stat.label} className="stat-card" style={{ animationDelay: `${idx * 0.08}s` }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="flex size-8 items-center justify-center rounded-lg"
+                    style={{ background: "var(--accent-soft)" }}
+                  >
+                    <stat.icon size={14} style={{ color: "var(--accent)" }} />
+                  </div>
+                  <span className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>
+                    {stat.label}
+                  </span>
+                </div>
+                <p className="text-3xl font-black tabular-nums">{stat.value.toLocaleString()}</p>
               </div>
-              <p className="text-2xl font-bold">{data.stats.totalRepos}</p>
-            </div>
-            <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}>
-              <div className="flex items-center gap-2 mb-1">
-                <FaStar size={14} style={{ color: "var(--accent)" }} />
-                <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>Stars</span>
-              </div>
-              <p className="text-2xl font-bold">{data.stats.totalStars}</p>
-            </div>
-            <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}>
-              <div className="flex items-center gap-2 mb-1">
-                <FaCodeBranch size={14} style={{ color: "var(--accent)" }} />
-                <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>Forks</span>
-              </div>
-              <p className="text-2xl font-bold">{data.stats.totalForks}</p>
-            </div>
-            <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}>
-              <div className="flex items-center gap-2 mb-1">
-                <FaUserFriends size={14} style={{ color: "var(--accent)" }} />
-                <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>Followers</span>
-              </div>
-              <p className="text-2xl font-bold">{data.profile.followers}</p>
-            </div>
+            ))}
           </div>
 
-          {/* Top Languages & Recent Repos */}
-          <div className="grid lg:grid-cols-2 gap-4 mb-6">
+          {/* Main grid: Languages + Recent Repos */}
+          <div className="grid lg:grid-cols-2 gap-4">
             {/* Top Languages */}
-            <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <div className="glass-border rounded-2xl p-5 card-hover-glow" style={{ background: "var(--surface-card)" }}>
+              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                 <FaCode size={14} style={{ color: "var(--accent)" }} />
                 Top Languages
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {data.stats.topLanguages.map((lang) => (
                   <div key={lang.language} className="flex items-center justify-between">
-                    <span className="text-sm">{lang.language}</span>
-                    <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                    <span className="text-sm font-medium">{lang.language}</span>
+                    <span className="text-xs rounded-full px-2.5 py-0.5" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
                       {lang.count} {lang.count === 1 ? "repo" : "repos"}
                     </span>
                   </div>
@@ -282,39 +227,46 @@ export default function Page() {
             </div>
 
             {/* Recent Repos */}
-            <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <div className="glass-border rounded-2xl p-5 card-hover-glow" style={{ background: "var(--surface-card)" }}>
+              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                 <FaBook size={14} style={{ color: "var(--accent)" }} />
                 Recent Repositories
               </h3>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-1 max-h-64 overflow-y-auto">
                 {data.recentRepos.map((repo) => (
                   <a
                     key={repo.full_name}
                     href={repo.html_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2 rounded-lg transition-colors hover:bg-white/5"
+                    className="group flex items-center justify-between rounded-xl p-3 transition-all duration-200"
+                    style={{ color: "var(--text-primary)" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--surface-elevated)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">
+                      <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">
                         {repo.name}
                         {repo.private && (
-                          <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
+                          <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
                             private
                           </span>
                         )}
                       </p>
                       {repo.language && (
-                        <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{repo.language}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>{repo.language}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 ml-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
-                      <span className="inline-flex items-center gap-0.5">
-                        <FaStar size={10} /> {repo.stars}
+                    <div className="flex items-center gap-3 ml-2 text-xs shrink-0" style={{ color: "var(--text-tertiary)" }}>
+                      <span className="inline-flex items-center gap-1">
+                        <FaStar size={10} className="transition-transform group-hover:scale-125" /> {repo.stars}
                       </span>
-                      <span className="inline-flex items-center gap-0.5">
-                        <FaCodeBranch size={10} /> {repo.forks}
+                      <span className="inline-flex items-center gap-1">
+                        <FaCodeBranch size={10} className="transition-transform group-hover:scale-125" /> {repo.forks}
                       </span>
                     </div>
                   </a>
@@ -324,8 +276,8 @@ export default function Page() {
           </div>
 
           {/* Recent Activity */}
-          <div className="rounded-xl border p-4 mb-6" style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}>
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <div className="glass-border rounded-2xl p-5 card-hover-glow" style={{ background: "var(--surface-card)" }}>
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
               <FaGithub size={14} style={{ color: "var(--accent)" }} />
               Recent Activity
             </h3>
@@ -333,16 +285,16 @@ export default function Page() {
               {data.recentActivity.slice(0, 10).map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-center gap-3 p-2 rounded-lg text-sm"
+                  className="flex items-center gap-3 rounded-xl p-2.5 text-sm transition-colors hover:bg-white/5"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  <span className="text-xs font-mono whitespace-nowrap" style={{ color: "var(--text-tertiary)" }}>
+                  <span className="shrink-0 text-xs font-mono rounded-md px-2 py-1" style={{ background: "var(--surface-elevated)", color: "var(--text-tertiary)" }}>
                     {new Date(event.created_at).toLocaleDateString()}
                   </span>
-                  <span className="truncate">
+                  <span className="truncate font-medium">
                     {event.type.replace("Event", "").replace(/([A-Z])/g, " $1").trim()}
                   </span>
-                  <span className="truncate text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  <span className="truncate text-xs shrink-0" style={{ color: "var(--text-tertiary)" }}>
                     {event.repo}
                   </span>
                 </div>
@@ -354,46 +306,34 @@ export default function Page() {
           </div>
 
           {/* Quick Links */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Link
-              href="/dashboard/strike-recovery"
-              className="rounded-xl border p-4 transition-all hover:-translate-y-0.5"
-              style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">⚡</span>
-                <h3 className="font-semibold">Strike Recovery</h3>
-              </div>
-              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                Recover your GitHub contribution streak with auto-generated commits
-              </p>
-            </Link>
-          <Link
-            href="/dashboard/profile-studio"
-            className="rounded-xl border p-4 transition-all hover:-translate-y-0.5"
-            style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}
-          >
-              <div className="flex items-center gap-2 mb-2">
-                <FaGithub size={16} style={{ color: "var(--accent)" }} />
-                <h3 className="font-semibold">Profile Studio</h3>
-              </div>
-              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-              Build and optimize your developer profile
-              </p>
-            </Link>
-            <Link
-              href="/dashboard/readme-intelligence"
-              className="rounded-xl border p-4 transition-all hover:-translate-y-0.5"
-              style={{ borderColor: "var(--border-subtle)", background: "var(--dashboard-card-bg)" }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <FaGithub size={16} style={{ color: "var(--accent)" }} />
-                <h3 className="font-semibold">README Intelligence</h3>
-              </div>
-              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                Build, preview, publish, and undo AI-generated READMEs
-              </p>
-            </Link>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {quickLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="group stat-card flex flex-col"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div
+                      className={`flex size-10 items-center justify-center rounded-xl bg-gradient-to-br ${link.gradient} text-white transition-transform duration-300 group-hover:scale-110`}
+                    >
+                      <Icon size={18} />
+                    </div>
+                    <h3 className="font-semibold text-sm">{link.label}</h3>
+                  </div>
+                  <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                    {link.desc}
+                  </p>
+                  <div className="mt-auto pt-3">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium transition-all duration-200 group-hover:gap-2" style={{ color: "var(--accent)" }}>
+                      Explore <span className="text-lg leading-none">→</span>
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </>
       )}

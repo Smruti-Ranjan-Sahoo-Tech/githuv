@@ -1426,21 +1426,7 @@ export default function ProfileStudioPage() {
               ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}`
               : "Not saved yet"}
           </p>
-          {profile?.strikeRecovery ? (
-            <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-left">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-emerald-100/60">
-                Latest strike recovery
-              </p>
-              <p className="mt-1 text-sm font-semibold text-emerald-100">
-                {formatProfileDate(profile.strikeRecovery.startDate)} to{" "}
-                {formatProfileDate(profile.strikeRecovery.endDate)}
-              </p>
-              <p className="mt-1 text-xs text-emerald-100/60">
-                {profile.strikeRecovery.uniqueDays} days,{" "}
-                {profile.strikeRecovery.totalCommits} commits
-              </p>
-            </div>
-          ) : null}
+
         </div>
       </div>
 
