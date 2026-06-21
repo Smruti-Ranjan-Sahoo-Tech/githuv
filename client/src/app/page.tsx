@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import HeroCanvas from "@/components/HeroCanvas";
 import Navbar from "@/components/Navbar";
+import { useFirebaseAuthStore } from "@/store/useFirebaseAuthStore";
 import {
   FaBrain,
   FaChartLine,
@@ -13,6 +16,7 @@ import {
   FaCode,
   FaRocket,
   FaFire,
+  FaKey,
 } from "react-icons/fa";
 
 const features = [
@@ -44,6 +48,13 @@ const features = [
       "Maintain platform learning streaks through tasks, profile updates, resume improvements, roadmap milestones, and project participation.",
     tone: "text-orange-300 bg-orange-500/10 border-orange-500/20",
   },
+  {
+    icon: FaKey,
+    title: "BYOK – Bring Your Own Key",
+    description:
+      "Use your own API keys for OpenAI, Gemini, and other LLM services. No platform lock-in, no extra charges — higher limits, full control.",
+    tone: "text-violet-300 bg-violet-500/10 border-violet-500/20",
+  },
 ];
 
 const objectives = [
@@ -69,6 +80,8 @@ function LogoMark({ compact = false }: { compact?: boolean }) {
 }
 
 export default function HomePage() {
+  const { user, loading } = useFirebaseAuthStore();
+
   return (
     <main className="min-h-screen overflow-hidden bg-neutral-950 text-white">
       <Navbar />
@@ -99,12 +112,21 @@ export default function HomePage() {
               </p>
 
               <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
-                <Link
-                  href="/login"
-                  className="rounded-lg bg-red-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-red-400"
-                >
-                  Start with GitHub
-                </Link>
+                {user ? (
+                  <Link
+                    href="/dashboard"
+                    className="rounded-lg bg-red-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-red-400"
+                  >
+                    Go to Dashboard
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="rounded-lg bg-red-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-red-400"
+                  >
+                    Start with GitHub
+                  </Link>
+                )}
 
                 <a
                   href="#overview"
