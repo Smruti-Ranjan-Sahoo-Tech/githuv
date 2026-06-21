@@ -54,9 +54,14 @@ GithuV helps developers build a stronger professional presence by intelligently 
 - AI-generated headlines, about sections, and posts
 - Professional branding recommendations
 
-### AI GitHub README Generator
-- Generate professional profile READMEs from your GitHub data
-- Incorporate skills, education, experience, and interests
+### AI GitHub Profile README Generator
+- Generate professional profile READMEs from your GitHub data via a LangGraph state machine
+- **6 themed templates**: Minimal Professional, Modern Developer, Corporate Clean, Open Source Creator, Portfolio Style, Compact Minimal
+- Analyzes your existing profile README (if present) — evaluates tone, structure, strengths, and carries forward valid content before generating an improved version
+- Resume-style profile image placement (left/right aligned) with optional animated GIF/SVG support
+- Live rendered preview (ReactMarkdown + remark-gfm) with toggle between rendered and source view
+- Shows existing README immediately on page load before any generation
+- One-click publish to your `username/username` GitHub profile repository
 
 ---
 
@@ -200,6 +205,48 @@ The client proxies `/api/*` requests to `http://localhost:4002` via Next.js rewr
 
 ---
 
+## AI Profile README Generation Pipeline
+
+```
+User data (GitHub API + MongoDB Profile)
+    ↓ fetchUserProfile.node.ts
+Merged user data + existing README (from username/username repo)
+    ↓ loadTheme.node.ts
+Theme template loaded (1 of 6)
+    ↓ aiWriter.node.ts + LLM (GPT-4o-mini / Gemini)
+Analysis of existing README (if present) → improved generation
+    ↓
+Generated Profile README Markdown
+    ↓ previewNode.ts
+Preview prepared (old vs new)
+    ↓ Publish
+Published to GitHub username/username profile repository
+```
+
+Powered by a **LangGraph state machine** (`server/src/lib/Langgraph/ProfileReadmeBuilder/Graph.ts`) with four nodes:
+
+1. **fetchUserProfile** — fetches GitHub user data + existing profile README
+2. **loadTheme** — loads the selected theme template from 6 curated styles
+3. **aiWriter** — constructs the prompt (with existing README analysis) and calls the LLM
+4. **previewNode** — prepares before/after preview for the frontend
+
+### Theme Templates
+
+All 6 templates are LLM prompt files in `server/src/lib/Langgraph/ProfileReadmeBuilder/templates/`:
+
+| Theme | Tone | Profile Image |
+|---|---|---|
+| Minimal Professional | Clean, understated, confident | Left/right aligned, resume-style |
+| Modern Developer | Energetic, tech-forward, personal | Side-aligned or animated GIF/SVG |
+| Corporate Clean | Formal, polished, business-ready | Beside header, executive-friendly |
+| Open Source Creator | Warm, collaborative, community-first | Side-aligned or lively banner |
+| Portfolio Style | Creative, visual, showcase-oriented | Resume-style or animated accent |
+| Compact Minimal | Ultra-concise, direct, high signal | Tiny, left/right aligned |
+
+The AI agent **analyzes the existing README before generating**, evaluating tone, sections, strengths, and weaknesses — carrying forward valid custom links and projects.
+
+---
+
 ## AI Resume Generation Pipeline
 
 ```
@@ -238,11 +285,17 @@ The system creates backdated commits to a private GitHub repo (`githuv-official-
 ## API Overview
 
 | Route | Description |
-|---|---|
+|---|---|---|
 | `POST /api/auth/login` | Firebase + GitHub OAuth login |
 | `GET /api/githuv/user` | Authenticated GitHub user data |
 | `GET /api/githuv/dashboard` | Aggregated GitHub stats |
 | `POST /api/githuv/create-repo` | Create private contribution repo |
+| `POST /api/githuv/profile-readme/generate` | Generate profile README with theme + feedback |
+| `GET /api/githuv/profile-readme/existing` | Fetch existing profile README from GitHub |
+| `POST /api/githuv/profile-readme/publish` | Publish generated README to profile repo |
+| `POST /api/githuv/repository-readme/generate` | Generate repository README |
+| `POST /api/githuv/repository-readme/publish` | Publish repository README |
+| `POST /api/githuv/repository-readme/undo` | Rollback repository README changes |
 | `POST /api/onboarding/step1..5` | Profile wizard steps |
 | `GET /api/resume` | List user resumes |
 | `POST /api/resume/generate-ai` | AI resume generation |

@@ -11,6 +11,9 @@ router.post("/print-contribution",authMiddleware,ContributionController.printCon
 router.post("/repository-readme/generate", authMiddleware, githuv.generateRepositoryReadme);
 router.post("/repository-readme/publish", authMiddleware, githuv.publishRepositoryReadme);
 router.post("/repository-readme/undo", authMiddleware, githuv.undoRepositoryReadme);
+router.get("/profile-readme/existing", authMiddleware, githuv.getExistingProfileReadme);
+router.post("/profile-readme/generate", authMiddleware, githuv.generateProfileReadme);
+router.post("/profile-readme/publish", authMiddleware, githuv.publishProfileReadme);
 const dashboardHandler: any = [authMiddleware, githuv.getDashboardData];
 router.get("/dashboard-data", dashboardHandler);
 

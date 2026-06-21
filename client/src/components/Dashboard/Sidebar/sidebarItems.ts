@@ -8,6 +8,7 @@ import {
   ScrollText,
   ShieldAlert,
   Sparkles,
+  UserCircle,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -66,6 +67,12 @@ export const sidebarItems: SidebarItem[] = [
     name: "README Intelligence",
     route: "/dashboard/readme-intelligence",
     icon: FileCode2,
+    section: "Special Features",
+  },
+  {
+    name: "Profile README",
+    route: "/dashboard/profile-readme",
+    icon: UserCircle,
     section: "Special Features",
   },
 ];

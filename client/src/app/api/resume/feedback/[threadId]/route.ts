@@ -3,10 +3,10 @@ import { axiosInstance } from "@/API/axiosInstance";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { threadId: string } }
+  context: { params: Promise<{ threadId: string }> }
 ) {
   try {
-    const { threadId } = params;
+    const { threadId } = await context.params;
     const body = await request.json();
     const cookies = request.cookies;
     const token = cookies.get("token")?.value;

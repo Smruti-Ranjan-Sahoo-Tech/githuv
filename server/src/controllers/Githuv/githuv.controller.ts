@@ -1,6 +1,7 @@
 import { createOctokit, getAuthenticatedOctokit } from "../../config/Octokit/octokit";
 import type { Request, Response } from "express";
 import { repositoryReadmeGraph } from "../../lib/Langgraph/RepositoryReadmeBuilder/Graph";
+import { profileReadmeGraph } from "../../lib/Langgraph/ProfileReadmeBuilder/Graph";
 import { User } from "../../models/user.model";
 
 const REPO_NAME = "githuv-official-app-for-contribution";
@@ -470,5 +471,184 @@ export default class githuv {
       });
     }
   }
-  
+
+  static async getExistingProfileReadme(req: Request, res: Response) {
+    try {
+      const octokit = await getAuthenticatedOctokit(req);
+      const { data: githubUser } = await octokit.request("GET /user");
+
+      const existingFile = await getReadmeFile(octokit, githubUser.login, githubUser.login);
+
+      const existingProfileReadme = existingFile
+        ? decodeContent(existingFile.data.content || "")
+        : "";
+
+      return res.json({
+        success: true,
+        existingProfileReadme,
+      });
+    } catch (error: any) {
+      console.error("Get Existing Profile README Error:", {
+        status: error.status,
+        message: error.message,
+      });
+
+      return res.status(error.status || 500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch existing profile README",
+      });
+    }
+  }
+
+  static async generateProfileReadme(req: Request, res: Response) {
+    try {
+      const octokit = await getAuthenticatedOctokit(req);
+      const { data: githubUser } = await octokit.request("GET /user");
+      const body = req.body as any;
+      const themeNo = body.themeNo || 1;
+      const userFeedback = body.userFeedback || "";
+
+      const user = await User.findOne({
+        firebaseUID: (req as any).user?.firebaseUID,
+      }).select("+githubAccessToken");
+
+      if (!user?.githubAccessToken) {
+        return res.status(400).json({
+          success: false,
+          message: "GitHub access token not found",
+        });
+      }
+
+      const result = await profileReadmeGraph.invoke({
+        userId: (req as any).user?.firebaseUID || "",
+        githubUsername: githubUser.login,
+        githubAccessToken: user.githubAccessToken,
+        themeNo,
+        userFeedback,
+      } as any);
+
+      return res.json({
+        success: true,
+        data: result.userData,
+        existingProfileReadme: result.existingProfileReadme,
+        generatedProfileReadme: result.generatedProfileReadme,
+        preview: result.preview,
+      });
+    } catch (error: any) {
+      console.error("Profile README Generation Error:", {
+        status: error.status,
+        message: error.message,
+      });
+
+      return res.status(error.status || 500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate profile README",
+      });
+    }
+  }
+
+  static async publishProfileReadme(req: Request, res: Response) {
+    try {
+      const octokit = await getAuthenticatedOctokit(req);
+      const { data: githubUser } = await octokit.request("GET /user");
+      const body = req.body as any;
+      const generatedReadme = body.generatedReadme;
+
+      if (!generatedReadme) {
+        return res.status(400).json({
+          success: false,
+          message: "generatedReadme is required",
+        });
+      }
+
+      const profileRepoName = githubUser.login;
+
+      let repoExists = true;
+      try {
+        await octokit.request("GET /repos/{owner}/{repo}", {
+          owner: githubUser.login,
+          repo: profileRepoName,
+        });
+      } catch (error: any) {
+        if (error.status === 404) {
+          repoExists = false;
+        } else {
+          throw error;
+        }
+      }
+
+      if (!repoExists) {
+        await octokit.request("POST /user/repos", {
+          name: profileRepoName,
+          description: "Profile README — special repository for my GitHub profile",
+          private: false,
+          auto_init: false,
+          headers: {
+            "X-GitHub-Api-Version": GITHUB_API_VERSION,
+          },
+        });
+      }
+
+      let existingSha: string | undefined;
+
+      try {
+        const existing = await octokit.rest.repos.getContent({
+          owner: githubUser.login,
+          repo: profileRepoName,
+          path: README_PATH,
+        });
+
+        if (!Array.isArray(existing.data)) {
+          existingSha = (existing.data as any).sha;
+        }
+      } catch {
+        // README doesn't exist yet
+      }
+
+      const { data: response } = await octokit.rest.repos.createOrUpdateFileContents({
+        owner: githubUser.login,
+        repo: profileRepoName,
+        path: README_PATH,
+        message: existingSha
+          ? "docs: update profile README via Githuv"
+          : "Initial commit: add profile README via Githuv",
+        content: Buffer.from(generatedReadme, "utf8").toString("base64"),
+        sha: existingSha,
+        headers: {
+          "X-GitHub-Api-Version": GITHUB_API_VERSION,
+        },
+      });
+
+      return res.json({
+        success: true,
+        repoName: profileRepoName,
+        repoUrl: `https://github.com/${githubUser.login}/${profileRepoName}`,
+        profileUrl: `https://github.com/${githubUser.login}`,
+        publishedSha: (response as any)?.content?.sha || null,
+        repoCreated: !repoExists,
+        message: repoExists
+          ? "Profile README published successfully"
+          : "Profile repository created and README published",
+      });
+    } catch (error: any) {
+      console.error("Profile README Publish Error:", {
+        status: error.status,
+        message: error.message,
+      });
+
+      return res.status(error.status || 500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to publish profile README",
+      });
+    }
+  }
 }
