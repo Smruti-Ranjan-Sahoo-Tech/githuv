@@ -6,7 +6,7 @@ type TopLanguage = {
   count: number;
 };
 
-type RecentRepo = {
+export type RecentRepo = {
   name: string;
   full_name: string;
   description: string;

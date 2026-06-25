@@ -1,5 +1,4 @@
 import {
-  BarChart3,
   FileText,
   FileCode2,
   FolderGit2,
@@ -50,11 +49,6 @@ export const sidebarItems: SidebarItem[] = [
     name: "Repositories",
     route: "/dashboard/repositories",
     icon: FolderGit2,
-  },
-  {
-    name: "Analytics",
-    route: "/dashboard/analytics",
-    icon: BarChart3,
   },
   { name: "divider", route: "", icon: null },
   {

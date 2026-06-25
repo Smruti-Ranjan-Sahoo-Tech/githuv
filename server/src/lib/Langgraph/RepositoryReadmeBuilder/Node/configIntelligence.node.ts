@@ -2,6 +2,57 @@ import { type RepositoryReadmeState } from "../State";
 import { CONFIG_FILES } from "../constants";
 import { decodeBase64Content, safeJsonParse } from "../utils";
 
+async function fetchAndDetectConfig(
+  octokit: any,
+  repoOwner: string,
+  repoName: string,
+  filePath: string,
+  details: Record<string, any>,
+  configRawContents: Record<string, string>,
+) {
+  const file = await octokit.rest.repos
+    .getContent({
+      owner: repoOwner,
+      repo: repoName,
+      path: filePath,
+    })
+    .catch((error: any) => {
+      if (error.status === 404) return null;
+      throw error;
+    });
+
+  if (!file || Array.isArray(file.data)) return;
+
+  const content = decodeBase64Content((file.data as any).content || "");
+  details.filesAnalyzed.push(filePath);
+  configRawContents[filePath] = content.length > 1000 ? content.slice(0, 1000) + "\n..." : content;
+
+  const fileName = filePath.split("/").pop() || filePath;
+
+  if (fileName === "package.json") detectPackageJson(content, details);
+  if (fileName === "requirements.txt") detectRequirementsTxt(content, details);
+  if (["pyproject.toml", "setup.py", "setup.cfg"].includes(fileName)) detectPythonConfig(content, details);
+  if (["manage.py", "wsgi.py", "asgi.py"].includes(fileName)) detectPythonEntrypoint(content, fileName, details);
+  if (fileName === "go.mod") detectGoMod(content, details);
+  if (fileName === "Cargo.toml") detectCargoToml(content, details);
+  if (fileName === "pom.xml") detectPomXml(content, details);
+  if (["build.gradle", "build.gradle.kts"].includes(fileName)) detectGradle(content, details);
+  if (fileName === "pubspec.yaml") detectPubspec(content, details);
+  if (fileName === "Gemfile") detectGemfile(content, details);
+  if (fileName === "composer.json") detectComposerJson(content, details);
+  if (fileName === "mix.exs") detectMixExs(content, details);
+  if (fileName === "Package.swift") detectPackageSwift(content, details);
+  if (fileName === "build.zig") details.signals.push("Zig");
+  if (fileName === "Dockerfile") detectDockerfile(content, details);
+  if (["docker-compose.yml", "docker-compose.yaml"].includes(fileName)) detectDockerCompose(content, details);
+  if (fileName === "tsconfig.json") detectTsconfig(content, details);
+  if (/^tailwind\.config\.(js|ts)$/.test(fileName)) details.signals.push("Tailwind CSS");
+  if (/^vite\.config\.(js|ts)$/.test(fileName)) details.signals.push("Vite");
+  if (/^next\.config\.(js|mjs|ts)$/.test(fileName)) details.framework = details.framework || "Next.js";
+  if (fileName === ".env.example") detectEnvExample(content, details);
+  if (["Makefile", "justfile"].includes(fileName)) details.signals.push(fileName);
+}
+
 export async function configIntelligence(
   state: RepositoryReadmeState
 ): Promise<Partial<RepositoryReadmeState>> {
@@ -20,49 +71,26 @@ export async function configIntelligence(
 
   const configRawContents: Record<string, string> = {};
 
+  // Phase 1: scan root-level config files
   for (const filePath of CONFIG_FILES) {
-    if (filePath === "*.csproj") continue;
+    await fetchAndDetectConfig(octokit, state.repoOwner, state.repoName, filePath, details, configRawContents);
+  }
 
-    const file = await octokit.rest.repos
-      .getContent({
-        owner: state.repoOwner,
-        repo: state.repoName,
-        path: filePath,
-      })
-      .catch((error: any) => {
-        if (error.status === 404) return null;
-        throw error;
+  // Phase 2: scan subdirectory config files from folder tree
+  if (state.folderTree) {
+    const configFileNames = new Set(CONFIG_FILES);
+    const subdirConfigs = state.folderTree
+      .split("\n")
+      .map((line) => line.replace(/^\s*-\s*/, "").trim())
+      .filter((path) => path.includes("/"))
+      .filter((path) => {
+        const name = path.split("/").pop() || "";
+        return configFileNames.has(name) && !details.filesAnalyzed.includes(path);
       });
 
-    if (!file || Array.isArray(file.data)) continue;
-
-    const content = decodeBase64Content((file.data as any).content || "");
-    details.filesAnalyzed.push(filePath);
-    configRawContents[filePath] = content.length > 1000 ? content.slice(0, 1000) + "\n..." : content;
-
-    if (filePath === "package.json") detectPackageJson(content, details);
-    if (filePath === "requirements.txt") detectRequirementsTxt(content, details);
-    if (filePath === "pyproject.toml" || filePath === "setup.py" || filePath === "setup.cfg") detectPythonConfig(content, details);
-    if (filePath === "manage.py" || filePath === "wsgi.py" || filePath === "asgi.py") detectPythonEntrypoint(content, filePath, details);
-    if (filePath === "go.mod") detectGoMod(content, details);
-    if (filePath === "Cargo.toml") detectCargoToml(content, details);
-    if (filePath === "pom.xml") detectPomXml(content, details);
-    if (filePath === "build.gradle" || filePath === "build.gradle.kts") detectGradle(content, details);
-    if (filePath === "pubspec.yaml") detectPubspec(content, details);
-    if (filePath === "Gemfile") detectGemfile(content, details);
-    if (filePath === "composer.json") detectComposerJson(content, details);
-    if (filePath === "mix.exs") detectMixExs(content, details);
-    if (filePath === "Package.swift") detectPackageSwift(content, details);
-    if (filePath === "build.zig") details.signals.push("Zig");
-    if (filePath === "Dockerfile") detectDockerfile(content, details);
-    if (filePath === "docker-compose.yml" || filePath === "docker-compose.yaml") detectDockerCompose(content, details);
-    if (filePath === "tsconfig.json") detectTsconfig(content, details);
-    if (filePath.endsWith("tailwind.config.js") || filePath.endsWith("tailwind.config.ts")) details.signals.push("Tailwind CSS");
-    if (filePath.endsWith("vite.config.ts") || filePath.endsWith("vite.config.js")) details.signals.push("Vite");
-    if (filePath.endsWith("next.config.js") || filePath.endsWith("next.config.mjs") || filePath.endsWith("next.config.ts"))
-      details.framework = details.framework || "Next.js";
-    if (filePath === ".env.example") detectEnvExample(content, details);
-    if (filePath === "Makefile" || filePath === "justfile") details.signals.push(filePath);
+    for (const filePath of subdirConfigs) {
+      await fetchAndDetectConfig(octokit, state.repoOwner, state.repoName, filePath, details, configRawContents);
+    }
   }
 
   return {

@@ -8,14 +8,19 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  GitBranch,
   Plus,
+  RotateCcw,
   Save,
+  Search,
   Sparkles,
+  Star,
   Trash2,
 } from "lucide-react";
 
 import ProgressRing from "@/components/ProfileStudio/ProgressRing";
 import { useFirebaseAuthStore } from "@/store/useFirebaseAuthStore";
+import { useGithubDataStore, type RecentRepo } from "@/store/useGithubDataStore";
 import {
   createEmptyDraft,
   onboardingStepLabels,
@@ -161,6 +166,89 @@ const formatProfileDate = (value?: string) => {
   return value;
 };
 
+function FindRepoModal({
+  repos,
+  loading,
+  onSelect,
+  onClose,
+}: {
+  repos: RecentRepo[];
+  loading: boolean;
+  onSelect: (repo: RecentRepo) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+
+  const filtered = repos.filter(
+    (repo) =>
+      repo.name.toLowerCase().includes(query.toLowerCase()) ||
+      (repo.description || "").toLowerCase().includes(query.toLowerCase()) ||
+      (repo.language || "").toLowerCase().includes(query.toLowerCase()),
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-2xl rounded-3xl border border-white/10 bg-zinc-950 p-6 shadow-2xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white">Select a Repository</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/10 px-3 py-1 text-sm text-white/60 transition hover:text-white"
+          >
+            Close
+          </button>
+        </div>
+        <div className="relative mb-4">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search your repositories..."
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-10 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-red-400/60"
+          />
+        </div>
+        <div className="max-h-80 space-y-2 overflow-y-auto">
+          {loading ? (
+            <p className="py-8 text-center text-sm text-white/40">Loading repositories...</p>
+          ) : filtered.length === 0 ? (
+            <p className="py-8 text-center text-sm text-white/40">No repositories found</p>
+          ) : (
+            filtered.map((repo) => (
+              <button
+                key={repo.full_name}
+                type="button"
+                onClick={() => onSelect(repo)}
+                className="w-full rounded-xl border border-white/10 bg-white/[0.02] p-4 text-left transition hover:border-red-400/30 hover:bg-red-500/5"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="truncate font-medium text-white">{repo.name}</h4>
+                    {repo.description && (
+                      <p className="mt-1 truncate text-sm text-white/50">{repo.description}</p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-4 text-sm text-white/50">
+                    {repo.language && (
+                      <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs">
+                        {repo.language}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Star size={14} /> {repo.stars}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfileStudioPage() {
   const router = useRouter();
   const { user, loading: authLoading, initialLoginCheck } =
@@ -178,9 +266,18 @@ export default function ProfileStudioPage() {
 
   const [activeStep, setActiveStep] = useState(1);
   const [draft, setDraft] = useState<ProfileDraft>(createEmptyDraft());
+  const [showRepoModal, setShowRepoModal] = useState(false);
+  const [activeProjectIndex, setActiveProjectIndex] = useState<number | null>(null);
   const draftRef = useRef(draft);
   const activeStepRef = useRef(activeStep);
   const hydrationUidRef = useRef<string | null>(null);
+  const autoFilledRef = useRef(false);
+
+  const {
+    data: githubData,
+    loading: githubLoading,
+    fetchDashboardData,
+  } = useGithubDataStore();
 
 
   useEffect(() => {
@@ -251,6 +348,37 @@ export default function ProfileStudioPage() {
   useEffect(() => {
     activeStepRef.current = activeStep;
   }, [activeStep]);
+
+  useEffect(() => {
+    if (!user || !profile) return;
+    const hasPersonalInfo = profile.personalInfo.fullName || profile.personalInfo.email;
+    if (!hasPersonalInfo && !githubData && !githubLoading) {
+      fetchDashboardData();
+    }
+  }, [user, profile, githubData, githubLoading, fetchDashboardData]);
+
+  useEffect(() => {
+    if (autoFilledRef.current || !githubData || !profile) return;
+    const info = profile.personalInfo;
+    const isEmpty = !info.fullName && !info.email && !info.githubUrl;
+    if (!isEmpty) return;
+
+    setDraft((current) => ({
+      ...current,
+      personalInfo: {
+        fullName: githubData.profile.name || current.personalInfo.fullName,
+        currentRole: githubData.profile.bio || current.personalInfo.currentRole,
+        email: githubData.profile.email || current.personalInfo.email,
+        phone: current.personalInfo.phone,
+        location: githubData.profile.location || current.personalInfo.location,
+        githubUrl: `https://github.com/${githubData.profile.login}`,
+        linkedinUrl: current.personalInfo.linkedinUrl,
+        portfolioUrl: githubData.profile.blog || current.personalInfo.portfolioUrl,
+        profileImage: githubData.profile.avatar_url || current.personalInfo.profileImage,
+      },
+    }));
+    autoFilledRef.current = true;
+  }, [githubData, profile]);
 
   const saveCurrentStep = async (keepAlive = false, advance = false) => {
     const currentDraft = draftRef.current;
@@ -354,6 +482,33 @@ export default function ProfileStudioPage() {
     }));
   };
 
+  const handleRepoSelect = (repo: RecentRepo) => {
+    setDraft((current) => {
+      const projects = [...current.projects];
+      const index = activeProjectIndex;
+      const project = {
+        title: repo.name,
+        description: repo.description || "",
+        techStack: repo.language ? [repo.language] : [],
+        githubUrl: repo.html_url,
+        liveUrl: "",
+        role: "",
+        features: [],
+        challenges: "",
+        startDate: "",
+        endDate: "",
+      };
+      if (index !== null && index < projects.length) {
+        projects[index] = project;
+      } else {
+        projects.push(project);
+      }
+      return { ...current, projects };
+    });
+    setShowRepoModal(false);
+    setActiveProjectIndex(null);
+  };
+
   const progress = profile?.completedSteps?.length
     ? Math.round((profile.completedSteps.length / totalSteps) * 100)
     : Math.round((activeStep / totalSteps) * 100);
@@ -403,6 +558,52 @@ export default function ProfileStudioPage() {
     if (activeStep === 1) {
       return (
         <div className="space-y-4">
+          <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <GitBranch size={20} className="text-red-300" />
+                <div>
+                  <p className="text-sm font-semibold text-white">GitHub Profile</p>
+                  <p className="text-xs text-white/50">
+                    {autoFilledRef.current
+                      ? "Your personal info was auto-filled from GitHub. Edit or refresh below."
+                      : "Import your profile data from GitHub to get started faster."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  await fetchDashboardData();
+                  const store = useGithubDataStore.getState();
+                  if (store.data) {
+                    const g = store.data.profile;
+                    setDraft((current) => ({
+                      ...current,
+                      personalInfo: {
+                        fullName: g.name || current.personalInfo.fullName,
+                        currentRole: g.bio || current.personalInfo.currentRole,
+                        email: g.email || current.personalInfo.email,
+                        phone: current.personalInfo.phone,
+                        location: g.location || current.personalInfo.location,
+                        githubUrl: `https://github.com/${g.login}`,
+                        linkedinUrl: current.personalInfo.linkedinUrl,
+                        portfolioUrl: g.blog || current.personalInfo.portfolioUrl,
+                        profileImage: g.avatar_url || current.personalInfo.profileImage,
+                      },
+                    }));
+                    autoFilledRef.current = true;
+                  }
+                }}
+                disabled={githubLoading}
+                className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-100 transition hover:bg-red-500/20 disabled:opacity-50"
+              >
+                <RotateCcw size={14} />
+                {githubLoading ? "Fetching..." : "Import from GitHub"}
+              </button>
+            </div>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             <TextField
               label="Full name"
@@ -607,18 +808,32 @@ export default function ProfileStudioPage() {
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h3 className="font-semibold text-white">Project {index + 1}</h3>
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateProjects((items) =>
-                      items.filter((_, itemIndex) => itemIndex !== index),
-                    )
-                  }
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/65 transition hover:border-red-400/30 hover:text-red-200"
-                >
-                  <Trash2 size={14} />
-                  Remove
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveProjectIndex(index);
+                      if (githubData?.repositories.length) setShowRepoModal(true);
+                      else fetchDashboardData().then(() => setShowRepoModal(true));
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/65 transition hover:border-red-400/30 hover:text-red-200"
+                  >
+                    <GitBranch size={14} />
+                    Find Repo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateProjects((items) =>
+                        items.filter((_, itemIndex) => itemIndex !== index),
+                      )
+                    }
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/65 transition hover:border-red-400/30 hover:text-red-200"
+                  >
+                    <Trash2 size={14} />
+                    Remove
+                  </button>
+                </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <TextField
@@ -751,30 +966,44 @@ export default function ProfileStudioPage() {
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={() =>
-              updateProjects((items) => [
-                ...items,
-                {
-                  title: "",
-                  description: "",
-                  techStack: [],
-                  githubUrl: "",
-                  liveUrl: "",
-                  role: "",
-                  features: [],
-                  challenges: "",
-                  startDate: "",
-                  endDate: "",
-                },
-              ])
-            }
-            className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
-          >
-            <Plus size={16} />
-            Add Project
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveProjectIndex(null);
+                if (githubData?.repositories.length) setShowRepoModal(true);
+                else fetchDashboardData().then(() => setShowRepoModal(true));
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:border-red-400/30 hover:text-red-200"
+            >
+              <GitBranch size={16} />
+              Find from GitHub
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                updateProjects((items) => [
+                  ...items,
+                  {
+                    title: "",
+                    description: "",
+                    techStack: [],
+                    githubUrl: "",
+                    liveUrl: "",
+                    role: "",
+                    features: [],
+                    challenges: "",
+                    startDate: "",
+                    endDate: "",
+                  },
+                ])
+              }
+              className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
+            >
+              <Plus size={16} />
+              Add Project
+            </button>
+          </div>
         </div>
       );
     }
@@ -1527,6 +1756,18 @@ export default function ProfileStudioPage() {
           ) : null}
 
           {renderStepEditor()}
+
+          {showRepoModal ? (
+            <FindRepoModal
+              repos={githubData?.repositories ?? []}
+              loading={githubLoading}
+              onSelect={handleRepoSelect}
+              onClose={() => {
+                setShowRepoModal(false);
+                setActiveProjectIndex(null);
+              }}
+            />
+          ) : null}
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6">
 

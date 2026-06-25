@@ -30,8 +30,7 @@ export const CONFIG_FILES = [
   "Gemfile", "Gemfile.lock", "Rakefile",
   // PHP
   "composer.json", "composer.lock",
-  // .NET / C#
-  "*.csproj",
+  // .NET / C# (individual project files matched via folder tree)
   // Elixir
   "mix.exs",
   // Swift
