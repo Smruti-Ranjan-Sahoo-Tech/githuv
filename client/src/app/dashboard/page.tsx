@@ -2,6 +2,7 @@
 
 import { useFirebaseAuthStore } from "@/store/useFirebaseAuthStore";
 import { useGithubDataStore } from "@/store/useGithubDataStore";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import {
@@ -25,11 +26,12 @@ export default function Page() {
   const { user, loading, initialLoginCheck } =
     useFirebaseAuthStore();
   const { data, loading: ghLoading, error, fetchDashboardData } = useGithubDataStore();
+  const dashboardLoading = loading || ghLoading || (!!user && !data && !error);
 
   useEffect(() => {
     const unsubscribe = initialLoginCheck();
     return unsubscribe;
-  }, []);
+  }, [initialLoginCheck]);
 
   useEffect(() => {
     if (user) {
@@ -37,13 +39,17 @@ export default function Page() {
     }
   }, [user, fetchDashboardData]);
 
-  if (loading) {
+  if (dashboardLoading) {
     return (
       <div className="flex min-h-[80vh] items-center justify-center rounded-2xl p-12">
         <div className="flex flex-col items-center gap-4">
-          <div className="shimmer size-16 rounded-full" />
-          <div className="shimmer h-4 w-48 rounded-full" />
-          <div className="shimmer h-3 w-32 rounded-full" />
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-2"
+            style={{ borderColor: "var(--border-subtle)", borderTopColor: "var(--accent)" }}
+          />
+          <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+            Loading dashboard
+          </p>
         </div>
       </div>
     );
@@ -127,14 +133,15 @@ export default function Page() {
       {data && (
         <>
           {/* Profile Card */}
-          <div className="glass-border rounded-2xl p-6 card-hover-glow" style={{ background: "var(--surface-card)" }}>
+          <div className="rounded-2xl border p-6" style={{ borderColor: "var(--border-subtle)", background: "var(--surface-card)" }}>
             <div className="flex flex-col sm:flex-row items-start gap-5">
               <div className="relative shrink-0">
-                <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-red-500 to-rose-400 opacity-60 blur-md" />
-                <img
+                <Image
                   src={data.profile.avatar_url}
                   alt={data.profile.login}
-                  className="relative size-20 rounded-full border-2"
+                  width={80}
+                  height={80}
+                  className="relative size-20 rounded-full border-2 object-cover"
                   style={{ borderColor: "var(--border-subtle)" }}
                 />
               </div>

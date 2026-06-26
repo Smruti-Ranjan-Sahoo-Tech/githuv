@@ -6,9 +6,7 @@ import {
   Palette,
   ScrollText,
   ShieldAlert,
-  Sparkles,
   UserCircle,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,11 +22,6 @@ export const sidebarItems: SidebarItem[] = [
     name: "Dashboard",
     route: "/dashboard",
     icon: LayoutDashboard,
-  },
-  {
-    name: "Users",
-    route: "/dashboard/users",
-    icon: Users,
   },
   {
     name: "Profile Studio",
