@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --githuv-bg: #0d1117;
+  --githuv-surface: #161b22;
+  --githuv-border: #30363d;
+  --githuv-text: #e6edf3;
+  --githuv-text-secondary: #8b949e;
+  --githuv-accent: #58a6ff;
+  --githuv-success: #3fb950;
+  --githuv-danger: #f85149;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--githuv-bg);
+  color: var(--githuv-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}

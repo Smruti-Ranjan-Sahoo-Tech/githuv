@@ -1,0 +1,63 @@
+{
+  "name": "githuv",
+  "displayName": "Githuv",
+  "description": "Chat with your GitHub repository",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "vscode": "^1.73.0"
+  },
+  "activationEvents": [
+    "onCommand:githuv-repo-chat",
+    "onView:githuv.chat"
+  ],
+  "main": "dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "githuv-repo-chat",
+        "title": "Githuv: Open Chat"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "githuv",
+          "title": "Githuv",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "githuv": [
+        {
+          "type": "webview",
+          "id": "githuv.chat",
+          "name": "Chat"
+        }
+      ]
+    }
+
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+   "build:extension": "esbuild extension/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=esm --platform=node --sourcemap",
+    "build:webview": "cd webview && bun run build",
+    "build": "bun run build:webview && bun run build:extension",
+    "dev": "bun run build:webview && bun run build:extension",
+    "lint": "tsc --noEmit",
+    "vscode:prepublish": "bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^26.0.1",
+    "@types/vscode": "^1.125.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.5.4"
+  }
+}
+
+

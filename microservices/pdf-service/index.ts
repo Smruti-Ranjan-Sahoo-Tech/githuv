@@ -1,5 +1,3 @@
-// import "./services/tex-to-pdf/index.ts";
-
 import express from "express";
 import compileRoute from "./src/Route/compile";
 
