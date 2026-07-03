@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { LetterResponse } from "@shared/types"
+import { apiRequest } from "../helpers/api"
 
 export default function LetterPage() {
   const [text, setText] = useState("")
@@ -15,13 +16,7 @@ export default function LetterPage() {
     setResponse(null)
 
     try {
-      const res = await fetch("http://localhost:5000/api/letter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      })
-
-      const data: LetterResponse = await res.json()
+      const data = await apiRequest<LetterResponse>("POST", "/api/letter", { text })
       setResponse(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed")
@@ -31,8 +26,8 @@ export default function LetterPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col p-6">
-      <h1 className="mb-6 text-xl font-bold">Letter API</h1>
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-[#0d1117] p-6">
+      <h1 className="mb-6 text-lg font-semibold text-[#e6edf3]">Letter API</h1>
 
       <textarea
         value={text}
@@ -45,7 +40,7 @@ export default function LetterPage() {
       <button
         onClick={handleSubmit}
         disabled={loading || !text.trim()}
-        className="mt-4 self-start rounded-lg bg-[#238636] px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2ea043] disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 self-start rounded-lg border border-[#30363d] bg-[#21262d] px-6 py-2 text-sm font-semibold text-[#e6edf3] transition-all hover:border-[#8b949e] hover:bg-[#30363d] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading ? "Submitting..." : "Submit"}
       </button>
@@ -58,7 +53,7 @@ export default function LetterPage() {
 
       {response && (
         <div className="mt-4 rounded-lg border border-[#30363d] bg-[#161b22] p-4">
-          <h2 className="mb-2 text-sm font-semibold text-[#8b949e]">Response</h2>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Response</h2>
           <pre className="overflow-x-auto text-sm text-[#e6edf3]">
             {JSON.stringify(response, null, 2)}
           </pre>

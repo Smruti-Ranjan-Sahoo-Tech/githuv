@@ -1,8 +1,10 @@
+import { Link } from "react-router-dom"
+
 interface TopBarProps {
-  repoName: string
-  avatarUrl: string
-  connectionStatus: "connected" | "disconnected" | "connecting"
-  onSettings: () => void
+  repoName?: string
+  avatarUrl?: string
+  connectionStatus?: "connected" | "disconnected" | "connecting"
+  onSettings?: () => void
 }
 
 const statusColors = {
@@ -13,17 +15,10 @@ const statusColors = {
 
 export default function TopBar({ repoName, avatarUrl, connectionStatus, onSettings }: TopBarProps) {
   return (
-    <div className="flex items-center justify-between border-b border-[#30363d] bg-[#161b22] px-4 py-3">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full" />
-          <span
-            className={`h-2 w-2 rounded-full ${statusColors[connectionStatus]}`}
-          />
-          <span className="text-xs text-[#8b949e]">{connectionStatus}</span>
-        </div>
-        <span className="text-sm font-medium">{repoName}</span>
-      </div>
+    <div className="flex items-center justify-between border-b border-[#21262d] bg-[#161b22] px-4 py-2.5">
+      <span className="text-lg font-black italic tracking-tight">
+        Githu<span className="text-[#f85149]">V</span>
+      </span>
 
       <div className="flex items-center gap-3">
         <button
@@ -35,11 +30,13 @@ export default function TopBar({ repoName, avatarUrl, connectionStatus, onSettin
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </button>
-        <img
-          src={avatarUrl}
-          alt="User avatar"
-          className="h-6 w-6 rounded-full"
-        />
+        {avatarUrl && (
+          <img
+            src={avatarUrl}
+            alt="User avatar"
+            className="h-6 w-6 rounded-full"
+          />
+        )}
       </div>
     </div>
   )
