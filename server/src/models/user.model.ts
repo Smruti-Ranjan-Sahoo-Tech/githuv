@@ -33,7 +33,7 @@ const userSchema=new Schema<IUser>({
     githubAccessToken: {
       type: String,
       required: true,
-      select: false, // hidden by default in queries
+      select: false, // stored encrypted and hidden by default in queries
     },
 },
   {timestamps:true}

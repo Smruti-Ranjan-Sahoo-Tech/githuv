@@ -6,11 +6,12 @@
   "private": true,
   "type": "module",
   "engines": {
-    "vscode": "^1.73.0"
+    "vscode": "^1.125.0"
   },
   "activationEvents": [
     "onCommand:githuv-repo-chat",
-    "onView:githuv.chat"
+    "onView:githuv.chat",
+    "onUri"
   ],
   "main": "dist/extension.js",
   "contributes": {
@@ -47,7 +48,8 @@
     "build": "bun run build:webview && bun run build:extension",
     "dev": "bun run build:webview && bun run build:extension",
     "lint": "tsc --noEmit",
-    "vscode:prepublish": "bun run build"
+    "vscode:prepublish": "bun run build",
+    "install:local": "bun run build && npx @vscode/vsce package --allow-missing-repository --no-dependencies && code --install-extension githuv-0.0.1.vsix --force"
   },
   "devDependencies": {
     "@types/bun": "latest",

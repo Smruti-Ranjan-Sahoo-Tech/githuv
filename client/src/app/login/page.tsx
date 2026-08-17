@@ -1,14 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { FaGithub } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useFirebaseAuthStore } from "@/store/useFirebaseAuthStore";
+
+const useHydrated = () =>
+  useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
 const Login = () => {
   const router = useRouter();
   const { error, initialLoginCheck, loading, loginByGithub, user } =
     useFirebaseAuthStore();
+  const hydrated = useHydrated();
 
   useEffect(() => {
     const unsubscribe = initialLoginCheck();
@@ -45,11 +53,11 @@ const Login = () => {
         <button
           type="button"
           onClick={handleLogin}
-          disabled={loading}
+          disabled={hydrated ? loading : false}
           className="mt-8 flex w-full items-center justify-center gap-3 rounded-md bg-white px-4 py-3 font-semibold text-black transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <FaGithub size={22} />
-          {loading ? "Checking session..." : "Continue with GitHub"}
+          {!hydrated || loading ? "Checking session..." : "Continue with GitHub"}
         </button>
 
         {error ? (

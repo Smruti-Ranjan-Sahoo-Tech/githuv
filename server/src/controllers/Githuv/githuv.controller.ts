@@ -1,5 +1,6 @@
 import { createOctokit, getAuthenticatedOctokit } from "../../config/Octokit/octokit";
 import type { Request, Response } from "express";
+import { decryptStoredGitHubAccessToken } from "../../config/JWT/jwt.config";
 import { repositoryReadmeGraph } from "../../lib/Langgraph/RepositoryReadmeBuilder/Graph";
 import { profileReadmeGraph } from "../../lib/Langgraph/ProfileReadmeBuilder/Graph";
 import { User } from "../../models/user.model";
@@ -279,13 +280,14 @@ export default class githuv {
       }
 
       const user = await User.findOne({ firebaseUID: (req as any).user?.firebaseUID }).select("+githubAccessToken");
+      const githubAccessToken = decryptStoredGitHubAccessToken(user?.githubAccessToken);
 
       const result = await repositoryReadmeGraph.invoke({
         octokit,
         userId: githubUser.login,
         repoOwner,
         repoName,
-        githubAccessToken: user?.githubAccessToken || "",
+        githubAccessToken,
         userInput: {
           projectPurpose: body.userInput?.projectPurpose || body.projectPurpose || "",
           keyFeatures: body.userInput?.keyFeatures || body.keyFeatures || [],
@@ -515,7 +517,9 @@ export default class githuv {
         firebaseUID: (req as any).user?.firebaseUID,
       }).select("+githubAccessToken");
 
-      if (!user?.githubAccessToken) {
+      const githubAccessToken = decryptStoredGitHubAccessToken(user?.githubAccessToken);
+
+      if (!githubAccessToken) {
         return res.status(400).json({
           success: false,
           message: "GitHub access token not found",
@@ -525,7 +529,7 @@ export default class githuv {
       const result = await profileReadmeGraph.invoke({
         userId: (req as any).user?.firebaseUID || "",
         githubUsername: githubUser.login,
-        githubAccessToken: user.githubAccessToken,
+        githubAccessToken,
         themeNo,
         userFeedback,
       } as any);

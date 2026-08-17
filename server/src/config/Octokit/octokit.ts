@@ -1,5 +1,6 @@
 import { Octokit } from "octokit";
 import type { Request } from "express";
+import { decryptStoredGitHubAccessToken } from "../JWT/jwt.config";
 import { User } from "../../models/user.model";
 
 export const createOctokit = (accessToken: string) => {
@@ -17,5 +18,5 @@ export async function getAuthenticatedOctokit(req: Request) {
   if (!user?.githubAccessToken) {
     throw new Error("GitHub access token not found for user");
   }
-  return createOctokit(user.githubAccessToken);
+  return createOctokit(decryptStoredGitHubAccessToken(user.githubAccessToken));
 }

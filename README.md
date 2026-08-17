@@ -297,7 +297,7 @@ The system creates backdated commits to a private GitHub repo (`githuv-official-
 ## Security Notes
 
 - JWT tokens stored in httpOnly cookies with 30-day expiry
-- GitHub access tokens hidden from default MongoDB queries (`select: false`)
+- GitHub access tokens are encrypted at rest and hidden from default MongoDB queries (`select: false`)
 - CORS restricted to `http://localhost:3000` in development
 - PDF compilation runs in isolated temp directories with auto-cleanup
 - The `.env` file contains development credentials — treat as compromised and rotate for production

@@ -1,4 +1,5 @@
 import cloudinary from "../../config/cloudinary";
+import { decryptStoredGitHubAccessToken } from "../../config/JWT/jwt.config";
 import { Resume } from "../../models/resume.model";
 import { User } from "../../models/user.model";
 import { resumeGraph } from "../../lib/Langgraph/ResumeBuilder/Graph";
@@ -25,6 +26,7 @@ class ResumeController {
       console.log("✓ ThreadId:", threadId);
 
       const userRecord = await User.findOne({ firebaseUID }).select("+githubAccessToken");
+      const githubAccessToken = decryptStoredGitHubAccessToken(userRecord?.githubAccessToken);
 
       console.log("⏳ Invoking resume graph...");
       const result = await resumeGraph.invoke({
@@ -32,7 +34,7 @@ class ResumeController {
         threadId: threadId,
         themeNo: themeNo || "Theme1",
         pageCount: pageCount || 1,
-        githubAccessToken: userRecord?.githubAccessToken || "",
+        githubAccessToken,
       });
       
       console.log("✓ Graph result:", { hasLatexCode: !!result.latexCode, hasPdfUrl: !!result.pdfUrl });

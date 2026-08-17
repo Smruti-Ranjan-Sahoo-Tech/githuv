@@ -502,10 +502,13 @@ export function receiveMessage(handler: (message: ExtensionMessage) => void) {
 ##### `pages/LoginPage.tsx` — GitHub Authentication
 
 Simple login flow:
-1. User clicks "Login with GitHub"
-2. Sends POST to `http://localhost:5000/api/auth/github`
-3. On success → navigate to `/chat`
-4. On failure → show error in a red alert box
+1. User clicks "Sign in with GitHub"
+2. The extension starts GitHub's device-code flow and sends the verification code back to the webview
+3. The webview shows the code inside VS Code and the user can optionally open the verification page themselves
+4. The extension polls GitHub until the user approves sign-in and receives the access token
+5. The extension returns the access token to the webview
+6. On success → navigate to `/chat`
+7. On failure → show error in a red alert box
 
 Shows a loading spinner while the request is in-flight.
 

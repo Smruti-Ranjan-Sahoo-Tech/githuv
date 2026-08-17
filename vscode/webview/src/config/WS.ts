@@ -1,5 +1,8 @@
 import { io } from "socket.io-client"
 
-export function connectWS() {
-    return io("http://localhost:4004", { transports: ["websocket"] });
+export function connectWS(token?: string | null) {
+    return io("http://localhost:4004", {
+        transports: ["websocket"],
+        auth: token ? { token } : undefined,
+    });
 }

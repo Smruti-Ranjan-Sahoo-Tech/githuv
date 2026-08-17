@@ -25,12 +25,37 @@ function loadEnv(basePath: string): Record<string, string> {
 
 export function activate(context: vscode.ExtensionContext) {
   const env = loadEnv(context.extensionUri.fsPath)
-  const apiUrl = env.API_URL ?? "http://localhost:4004"
+  const apiUrl = env.API_URL ?? "http://localhost:4002"
+  const clientUrl = env.CLIENT_URL ?? "http://localhost:3000"
 
-  const provider = new GithuvWebviewProvider(context.extensionUri, apiUrl)
+  const provider = new GithuvWebviewProvider(
+    context.extensionUri,
+    apiUrl,
+    clientUrl,
+    context.extension.id,
+    context,
+  )
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(GithuvWebviewProvider.viewType, provider)
+  )
+
+  context.subscriptions.push(
+    vscode.window.registerUriHandler({
+      handleUri(uri: vscode.Uri) {
+        if (uri.path === "/auth-callback") {
+          const queryParams = new URLSearchParams(uri.query)
+          const fragmentParams = new URLSearchParams(uri.fragment)
+          const code = queryParams.get("code") ?? fragmentParams.get("code")
+          const token = queryParams.get("token")
+          if (code) {
+            void provider.receiveAuthCode(code)
+          } else if (token) {
+            provider.receiveAuthToken(token)
+          }
+        }
+      },
+    })
   )
 
   registerCommands(context)

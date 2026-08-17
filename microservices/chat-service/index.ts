@@ -1,7 +1,19 @@
 import cors from "cors";
+import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
+import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
+
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SERVER_SECREAT;
+
+interface VSCodeTokenPayload {
+    uid: string;
+    username?: string;
+    issuedAt: number;
+}
 
 type ChatMessage = {
     id: string;
@@ -27,7 +39,12 @@ const PORT = 4004;
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: (origin, callback) => {
+            if (!origin || /^(http:\/\/localhost:\d+|vscode-webview:\/\/)/.test(origin)) {
+                return callback(null, true);
+            }
+            return callback(new Error("Not allowed by CORS"));
+        },
         methods: ["GET", "POST"],
     },
 });
@@ -36,6 +53,31 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+// Require a signed JWT on every socket connection.
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token as string | undefined;
+
+    if (!JWT_SECRET) {
+        return next(new Error("Server is missing JWT_SERVER_SECREAT"));
+    }
+    if (!token) {
+        return next(new Error("Missing auth token"));
+    }
+
+    try {
+        const payload = jwt.verify(token, JWT_SECRET, {
+            algorithms: ["HS256"],
+        }) as VSCodeTokenPayload;
+
+        socket.data.username = payload.username ?? payload.uid;
+        socket.data.uid = payload.uid;
+
+        next();
+    } catch {
+        return next(new Error("Invalid or expired auth token"));
+    }
+});
+
 // Store messages by room
 const roomMessages: Record<string, ChatMessage[]> = {};
 
@@ -43,10 +85,10 @@ io.on("connection", (socket) => {
     console.log(`✅ Connected: ${socket.id}`);
 
     // Join Room
-    socket.on("joinRoom", ({ username, roomId }: JoinRoomPayload) => {
-        if (!username?.trim() || !roomId?.trim()) return;
-        
-        socket.data.username = username;
+    socket.on("joinRoom", ({ roomId }: JoinRoomPayload) => {
+        if (!socket.data.username || !roomId?.trim()) return;
+
+        const username = socket.data.username as string;
         socket.data.roomId = roomId;
         
         socket.join(roomId);
