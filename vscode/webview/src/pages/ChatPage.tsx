@@ -66,6 +66,7 @@ const ChatPage = () => {
 
     socket.on("connect_error", () => {
       useGithubAuthStore.getState().logout();
+      sendMessage({ type: "clearStoredToken" });
       navigate("/login");
     });
 
@@ -107,6 +108,8 @@ const ChatPage = () => {
   };
 
   const handleLogout = () => {
+    useGithubAuthStore.getState().logout();
+    sendMessage({ type: "clearStoredToken" });
     navigate("/login");
   };
 

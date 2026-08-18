@@ -103,7 +103,7 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
           this._handleOpenClientAuth()
           break
         case "clearStoredToken":
-          this._context.secrets.delete("githuv-token").catch(() => {})
+          void this._context.secrets.delete("githuv-token")
           break
       }
     })
