@@ -10,7 +10,7 @@
         "isDefault": true
       },
       "problemMatcher": [],
-      "label": "bun: build",
+      "label": "build",
       "detail": "Build webview + extension"
     }
   ]

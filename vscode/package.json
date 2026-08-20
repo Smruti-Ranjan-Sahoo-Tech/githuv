@@ -43,10 +43,12 @@
   },
   "scripts": {
     "compile": "tsc -p ./",
-   "build:extension": "esbuild extension/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=esm --platform=node --sourcemap",
+    "build:extension": "esbuild extension/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=esm --platform=node --sourcemap",
     "build:webview": "cd webview && bun run build",
     "build": "bun run build:webview && bun run build:extension",
-    "dev": "bun run build:webview && bun run build:extension",
+    "watch:extension": "esbuild extension/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=esm --platform=node --sourcemap --watch",
+    "watch:webview": "cd webview && bun run build --watch",
+    "dev": "bun run watch:extension & bun run watch:webview",
     "lint": "tsc --noEmit",
     "vscode:prepublish": "bun run build",
     "install:local": "bun run build && npx @vscode/vsce package --allow-missing-repository --no-dependencies && code --install-extension githuv-0.0.1.vsix --force"

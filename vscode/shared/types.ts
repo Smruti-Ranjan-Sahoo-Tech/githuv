@@ -40,6 +40,27 @@ export interface WorkspaceInfoPayload {
   folderPath?: string
 }
 
+export interface CopyTextPayload {
+  text: string
+}
+
+export interface InsertTextPayload {
+  text: string
+}
+
+export interface SaveChangesPayload {
+  filePath?: string
+  content: string
+}
+
+export interface SavedChatMessage {
+  id: string
+  roomId: string
+  role: "user" | "assistant" | "system"
+  content: string
+  timestamp: number
+}
+
 export interface GithubApiRequestPayload {
   id: string
   endpoint: string
@@ -94,6 +115,10 @@ export type WebviewMessage =
   | { type: "githubAuthRequest"; payload: GithubAuthRequestPayload }
   | { type: "openClientAuth" }
   | { type: "clearStoredToken" }
+  | { type: "copyText"; payload: CopyTextPayload }
+  | { type: "insertText"; payload: InsertTextPayload }
+  | { type: "saveChanges"; payload: SaveChangesPayload }
+  | { type: "getSavedMessages"; payload: { roomId: string } }
 
 export type ExtensionMessage =
   | { type: "connectionStatus"; payload: { status: string } }
@@ -104,3 +129,5 @@ export type ExtensionMessage =
   | { type: "githubAuthProgress"; payload: GithubAuthProgressPayload }
   | { type: "githubAuthResponse"; payload: GithubAuthResponsePayload }
   | { type: "authToken"; payload: { token: string } }
+  | { type: "savedMessages"; payload: { messages: SavedChatMessage[] } }
+  | { type: "operationResult"; payload: { success: boolean; message: string } }

@@ -1,5 +1,5 @@
 import path from "node:path"
-import { readFileSync } from "node:fs"
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs"
 import { createServer, type Server } from "node:http"
 import type { AddressInfo } from "node:net"
 import type {
@@ -9,7 +9,7 @@ import type {
   WebviewViewProvider,
   WebviewViewResolveContext,
 } from "vscode"
-import { Uri, workspace, commands, env } from "vscode"
+import { Uri, workspace, commands, env, window, Range } from "vscode"
 import type {
   WebviewMessage,
   ExtensionMessage,
@@ -20,6 +20,10 @@ import type {
   GithubApiResponsePayload,
   GithubAuthRequestPayload,
   GithubAuthResponsePayload,
+  CopyTextPayload,
+  InsertTextPayload,
+  SaveChangesPayload,
+  SavedChatMessage,
 } from "../../shared/types"
 import { GithubAuthService } from "../services/GithubAuthService"
 
@@ -104,6 +108,21 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
           break
         case "clearStoredToken":
           void this._context.secrets.delete("githuv-token")
+          break
+        case "copyText":
+          this._handleCopyText(message.payload)
+          break
+        case "insertText":
+          this._handleInsertText(message.payload)
+          break
+        case "saveChanges":
+          this._handleSaveChanges(message.payload)
+          break
+        case "getSavedMessages":
+          this._handleGetSavedMessages(message.payload.roomId)
+          break
+        case "sendMessage":
+          this._handleSendMessage(message.payload.text)
           break
       }
     })
@@ -390,6 +409,158 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
 
       this.postMessage({ type: "apiResponse", payload: responsePayload })
     }
+  }
+
+  private async _handleCopyText(payload: CopyTextPayload) {
+    try {
+      await env.clipboard.writeText(payload.text)
+      this.postMessage({ type: "operationResult", payload: { success: true, message: "Text copied to clipboard" } })
+    } catch {
+      this.postMessage({ type: "operationResult", payload: { success: false, message: "Failed to copy text" } })
+    }
+  }
+
+  private _handleInsertText(payload: InsertTextPayload) {
+    const editor = window.activeTextEditor
+    if (!editor) {
+      this.postMessage({ type: "operationResult", payload: { success: false, message: "No active editor" } })
+      return
+    }
+
+    editor.edit((editBuilder) => {
+      editBuilder.insert(editor.selection.active, payload.text)
+    }).then((success) => {
+      this.postMessage({ type: "operationResult", payload: { success, message: success ? "Text inserted" : "Failed to insert text" } })
+    })
+  }
+
+  private async _handleSaveChanges(payload: SaveChangesPayload) {
+    try {
+      const activeEditor = window.activeTextEditor
+      const activeFilePath = activeEditor?.document.uri.scheme === "file" ? activeEditor.document.uri.fsPath : undefined
+      const targetFilePath = payload.filePath ?? activeFilePath
+
+      if (!targetFilePath) {
+        const folders = workspace.workspaceFolders
+        if (!folders || folders.length === 0) {
+          this.postMessage({ type: "operationResult", payload: { success: false, message: "No workspace folder found" } })
+          return
+        }
+        const folder = folders[0]
+        if (!folder) {
+          this.postMessage({ type: "operationResult", payload: { success: false, message: "No workspace folder found" } })
+          return
+        }
+        const folderPath = folder.uri.fsPath
+        const githuvDir = path.join(folderPath, ".githuv")
+        if (!existsSync(githuvDir)) {
+          mkdirSync(githuvDir, { recursive: true })
+        }
+        const suggestionPath = path.join(githuvDir, `suggestion-${Date.now()}.md`)
+        writeFileSync(suggestionPath, payload.content, "utf-8")
+        this.postMessage({ type: "operationResult", payload: { success: true, message: `Changes saved to ${suggestionPath}` } })
+
+        const doc = await workspace.openTextDocument(Uri.file(suggestionPath))
+        await window.showTextDocument(doc)
+        return
+      }
+
+      if (activeEditor && activeFilePath === targetFilePath) {
+        const document = activeEditor.document
+        const lastLine = document.lineCount - 1
+        const fullRange = new Range(
+          document.lineAt(0).range.start,
+          document.lineAt(lastLine).range.end
+        )
+
+        const success = await activeEditor.edit((editBuilder) => {
+          editBuilder.replace(fullRange, payload.content)
+        })
+
+        if (!success) {
+          this.postMessage({ type: "operationResult", payload: { success: false, message: "Failed to update active editor" } })
+          return
+        }
+
+        await activeEditor.document.save()
+      } else {
+        writeFileSync(targetFilePath, payload.content, "utf-8")
+      }
+
+      this.postMessage({ type: "operationResult", payload: { success: true, message: `Changes saved to ${targetFilePath}` } })
+
+      const doc = await workspace.openTextDocument(Uri.file(targetFilePath))
+      await window.showTextDocument(doc)
+    } catch (error) {
+      this.postMessage({ type: "operationResult", payload: { success: false, message: `Failed to save: ${error instanceof Error ? error.message : "Unknown error"}` } })
+    }
+  }
+
+  private _handleGetSavedMessages(roomId: string) {
+    const githuvDir = this._getGithuvDir()
+    if (!githuvDir) {
+      this.postMessage({ type: "savedMessages", payload: { messages: [] } })
+      return
+    }
+
+    const messagesFile = path.join(githuvDir, `messages-${roomId}.json`)
+    try {
+      if (existsSync(messagesFile)) {
+        const data = readFileSync(messagesFile, "utf-8")
+        const messages = JSON.parse(data) as SavedChatMessage[]
+        this.postMessage({ type: "savedMessages", payload: { messages } })
+      } else {
+        this.postMessage({ type: "savedMessages", payload: { messages: [] } })
+      }
+    } catch {
+      this.postMessage({ type: "savedMessages", payload: { messages: [] } })
+    }
+  }
+
+  private _handleSendMessage(text: string) {
+    const githuvDir = this._getGithuvDir()
+    if (!githuvDir) {
+      return
+    }
+
+    const roomId = "default"
+    const messagesFile = path.join(githuvDir, `messages-${roomId}.json`)
+    const message: SavedChatMessage = {
+      id: crypto.randomUUID(),
+      roomId,
+      role: "user",
+      content: text,
+      timestamp: Date.now(),
+    }
+
+    try {
+      let messages: SavedChatMessage[] = []
+      if (existsSync(messagesFile)) {
+        const data = readFileSync(messagesFile, "utf-8")
+        messages = JSON.parse(data) as SavedChatMessage[]
+      }
+      messages.push(message)
+      writeFileSync(messagesFile, JSON.stringify(messages, null, 2), "utf-8")
+    } catch {
+      // Ignore errors
+    }
+  }
+
+  private _getGithuvDir(): string | null {
+    const folders = workspace.workspaceFolders
+    if (!folders || folders.length === 0) {
+      return null
+    }
+    const folder = folders[0]
+    if (!folder) {
+      return null
+    }
+    const folderPath = folder.uri.fsPath
+    const githuvDir = path.join(folderPath, ".githuv")
+    if (!existsSync(githuvDir)) {
+      mkdirSync(githuvDir, { recursive: true })
+    }
+    return githuvDir
   }
 
   private _getHtmlContent(webview: WebviewView["webview"], storedToken?: string): string {

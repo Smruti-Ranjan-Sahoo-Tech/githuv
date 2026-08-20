@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
+import ChatMessageComponent from "../components/ChatMessage";
 import { Socket } from "socket.io-client";
 import { connectWS } from "../config/WS";
 import { useGithubAuthStore } from "../store/useGithubAuthStore";
-import { sendMessage } from "../helpers/postMessage";
+import { sendMessage, receiveMessage } from "../helpers/postMessage";
+import type { ExtensionMessage } from "@shared/types";
 
-type ChatMessage = {
+type ChatMessageLocal = {
   id: string;
   sender: string;
   message: string;
@@ -39,9 +41,10 @@ const ChatPage = () => {
   const [roomName] = useState(state.roomName ?? "");
 
   const [text, setText] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessageLocal[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+  const [operationStatus, setOperationStatus] = useState<{ success: boolean; message: string } | null>(null);
 
   const autoJoinedRef = useRef(false);
 
@@ -70,7 +73,7 @@ const ChatPage = () => {
       navigate("/login");
     });
 
-    socket.on("receive-message", (data: ChatMessage | ChatMessage[]) => {
+    socket.on("receive-message", (data: ChatMessageLocal | ChatMessageLocal[]) => {
       if (Array.isArray(data)) {
         setMessages(data);
       } else {
@@ -78,10 +81,42 @@ const ChatPage = () => {
       }
     });
 
+    const cleanupListener = receiveMessage((message: ExtensionMessage) => {
+      if (message.type === "savedMessages") {
+        const savedMsgs = message.payload.messages.map((m) => ({
+          id: m.id,
+          sender: m.role === "user" ? username : "Githuv",
+          message: m.content,
+          time: m.timestamp,
+          type: m.role === "user" ? "user" as const : "system" as const,
+        }));
+        setMessages(savedMsgs);
+      }
+
+      if (message.type === "operationResult") {
+        setOperationStatus(message.payload);
+      }
+    });
+
+    if (roomId) {
+      sendMessage({ type: "getSavedMessages", payload: { roomId } });
+    }
+
     return () => {
       socket.disconnect();
+      cleanupListener();
     };
   }, []);
+
+  useEffect(() => {
+    if (!operationStatus) return;
+
+    const timeout = window.setTimeout(() => {
+      setOperationStatus(null);
+    }, 3000);
+
+    return () => window.clearTimeout(timeout);
+  }, [operationStatus]);
 
   const handleJoinRoom = () => {
     if (!socketRef.current || !roomId.trim() || !username.trim()) return;
@@ -100,7 +135,7 @@ const ChatPage = () => {
         sender: username,
         message: text,
         time: Date.now(),
-        type: "user",
+        type: "user" as const,
       },
     });
 
@@ -173,6 +208,17 @@ const ChatPage = () => {
               as <span className="text-[#58a6ff]">{username}</span>
             </span>
           </div>
+          {operationStatus && (
+            <div
+              className={`border-b px-4 py-2 text-xs ${
+                operationStatus.success
+                  ? "border-[#1f4f2c] bg-[#102015] text-[#7ee787]"
+                  : "border-[#5a1b1b] bg-[#1f1010] text-[#f85149]"
+              }`}
+            >
+              {operationStatus.message}
+            </div>
+          )}
 
           {/* Messages area */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -190,33 +236,16 @@ const ChatPage = () => {
                 {msg.type === "system" ? (
                   <div className="text-center text-xs text-[#d29922]">{msg.message}</div>
                 ) : (
-                  <div className={`flex ${msg.sender === username ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[75%] rounded-lg px-4 py-2 text-sm ${
-                        msg.sender === username
-                          ? "bg-[#238636] text-white"
-                          : "border border-[#30363d] bg-[#161b22] text-[#e6edf3]"
-                      }`}
-                    >
-                      <div
-                        className={`mb-0.5 text-xs font-semibold ${
-                          msg.sender === username ? "text-[#7ee787]" : "text-[#58a6ff]"
-                        }`}
-                      >
-                        {msg.sender}
-                      </div>
-                      <div className="whitespace-pre-wrap break-words leading-relaxed">
-                        {msg.message}
-                      </div>
-                      <div
-                        className={`mt-1 text-[10px] ${
-                          msg.sender === username ? "text-[#7ee787]/60" : "text-[#8b949e]"
-                        }`}
-                      >
-                        {formatTime(msg.time)}
-                      </div>
-                    </div>
-                  </div>
+                  <ChatMessageComponent
+                    message={{
+                      id: msg.id,
+                      role: msg.sender === username ? "user" : "assistant",
+                      content: msg.message,
+                      timestamp: msg.time,
+                    }}
+                    sender={msg.sender}
+                    currentUsername={username}
+                  />
                 )}
               </div>
             ))}
