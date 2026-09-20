@@ -24,8 +24,22 @@ import type {
   InsertTextPayload,
   SaveChangesPayload,
   SavedChatMessage,
+  UploadImagePayload,
+  UploadImageResultPayload,
+  SaveReceivedImagePayload,
+  SaveReceivedImageResultPayload,
+  OpenExternalPayload,
+  Task,
 } from "../../shared/types"
 import { GithubAuthService } from "../services/GithubAuthService"
+
+const ROUTE_TO_VIEW: Record<string, string> = {
+  "/chat": "githuv.chat",
+  "/tasks": "githuv.tasks",
+  "/repo": "githuv.repo",
+}
+
+export { ROUTE_TO_VIEW }
 
 function parseGitRemoteUrl(remoteUrl: string): { owner: string; repo: string } | null {
   // SSH: git@github.com:owner/repo.git
@@ -48,16 +62,19 @@ function parseGitRemoteUrl(remoteUrl: string): { owner: string; repo: string } |
 }
 
 export class GithuvWebviewProvider implements WebviewViewProvider {
-  public static readonly viewType = "githuv.chat"
-
   private _view?: WebviewView
   private readonly _githubAuth = new GithubAuthService()
   private _callbackServer?: Server
 
   constructor(
+    /** Native VS Code view id this provider backs (githuv.chat / githuv.tasks / githuv.repo). */
+    readonly viewType: string,
+    /** Initial SPA route for this view (e.g. "/chat"). */
+    private readonly _route: string,
     private readonly _extensionUri: Uri,
     private readonly _apiUrl: string,
     private readonly _clientUrl: string,
+    private readonly _chatUrl: string,
     private readonly _extensionId: string,
     private readonly _context: ExtensionContext,
   ) {}
@@ -69,9 +86,13 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
   ) {
     this._view = webviewView
 
+    const imagesDirUri = this._getImagesDirUri()
+
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [this._extensionUri],
+      localResourceRoots: imagesDirUri
+        ? [this._extensionUri, imagesDirUri]
+        : [this._extensionUri],
     }
 
     let storedToken: string | undefined
@@ -87,6 +108,7 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
       switch (message.type) {
         case "navigate":
           commands.executeCommand("setContext", "githuv.view", message.payload.path)
+          this._focusViewForPath(message.payload.path)
           break
         case "openSettings":
           commands.executeCommand("workbench.action.openSettings", "githuv")
@@ -121,8 +143,26 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
         case "getSavedMessages":
           this._handleGetSavedMessages(message.payload.roomId)
           break
+        case "saveMessages":
+          this._handleSaveMessages(message.payload.roomId, message.payload.messages)
+          break
         case "sendMessage":
           this._handleSendMessage(message.payload.text)
+          break
+        case "uploadImage":
+          void this._handleUploadImage(message.payload)
+          break
+        case "saveReceivedImage":
+          void this._handleSaveReceivedImage(message.payload)
+          break
+        case "openExternal":
+          void this._handleOpenExternal(message.payload)
+          break
+        case "getSavedTasks":
+          this._handleGetSavedTasks()
+          break
+        case "saveTasks":
+          this._handleSaveTasks(message.payload.tasks)
           break
       }
     })
@@ -248,6 +288,17 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
     if (this._callbackServer) {
       this._callbackServer.close()
       this._callbackServer = undefined
+    }
+  }
+
+  /**
+   * When the SPA asks to navigate to another native view, focus that view in
+   * VS Code (each contributed view gets a `<viewId>.focus` command).
+   */
+  private _focusViewForPath(path: string) {
+    const viewId = ROUTE_TO_VIEW[path]
+    if (viewId) {
+      commands.executeCommand(`${viewId}.focus`)
     }
   }
 
@@ -496,6 +547,113 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
     }
   }
 
+  private async _handleUploadImage(payload: UploadImagePayload) {
+    const { id, roomId, dataUrl, fileName } = payload
+
+    const result: UploadImageResultPayload = { id, success: false }
+
+    try {
+      const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/)
+      if (!match) throw new Error("Invalid image data")
+      const mime = match[1]!
+      const buffer = Buffer.from(match[2]!, "base64")
+      if (buffer.byteLength > 10 * 1024 * 1024) throw new Error("Image exceeds 10MB")
+
+      const ext = (mime.split("/")[1] ?? "png").replace("jpeg", "jpg")
+      const localPath = await this._saveImageLocally(roomId, id, ext, buffer)
+
+      const form = new FormData()
+      const blob = new Blob([new Uint8Array(buffer)], { type: mime })
+      form.append("image", blob, fileName || `chat-${id}.${ext}`)
+
+      const response = await fetch(`${this._chatUrl}/api/images/upload`, {
+        method: "POST",
+        body: form,
+      })
+
+      const json = (await response.json().catch(() => ({}))) as {
+        success?: boolean
+        imageUrl?: string
+        publicId?: string
+        error?: string
+      }
+
+      if (!response.ok || !json.success || !json.imageUrl) {
+        throw new Error(json.error ?? "Cloudinary upload failed")
+      }
+
+      result.success = true
+      result.imageUrl = json.imageUrl
+      result.publicId = json.publicId
+      result.localImagePath = localPath
+    } catch (error) {
+      result.error = error instanceof Error ? error.message : "Upload failed"
+    }
+
+    this.postMessage({ type: "uploadImageResult", payload: result })
+  }
+
+  private async _saveImageLocally(roomId: string, id: string, ext: string, buffer: Buffer): Promise<string> {
+    const githuvDir = this._getGithuvDir()
+    if (!githuvDir) throw new Error("No workspace folder found")
+
+    const imagesDir = path.join(githuvDir, "images")
+    if (!existsSync(imagesDir)) {
+      mkdirSync(imagesDir, { recursive: true })
+    }
+
+    const filePath = path.join(imagesDir, `${id}.${ext}`)
+    writeFileSync(filePath, buffer)
+    return filePath
+  }
+
+  /**
+   * WhatsApp-style received-image persistence: downloads an image the remote
+   * user shared (Cloudinary URL) and stores a permanent local copy in
+   * .githuv/images/ so the receiver keeps it even after the 7-day CDN TTL.
+   * Skips the download when the file already exists locally.
+   */
+  private async _handleSaveReceivedImage(payload: SaveReceivedImagePayload) {
+    const { id, imageUrl, fileName } = payload
+    const result: SaveReceivedImageResultPayload = { id, success: false }
+    try {
+      if (!imageUrl) throw new Error("Missing image URL")
+      const ext = (imageUrl.match(/\.(jpe?g|png|gif|webp|bmp|svg)$/i)?.[1] ?? "jpg").toLowerCase().replace("jpeg", "jpg")
+      const safeName = (fileName || `msg-${id}.${ext}`).replace(/[^a-zA-Z0-9._-]/g, "-").replace(/\.+$/g, "") || `msg-${id}.${ext}`
+      const finalName = safeName.endsWith(`.${ext}`) ? safeName : `${safeName}.${ext}`
+
+      const githuvDir = this._getGithuvDir()
+      if (!githuvDir) throw new Error("No workspace folder found")
+      const imagesDir = path.join(githuvDir, "images")
+      if (!existsSync(imagesDir)) {
+        mkdirSync(imagesDir, { recursive: true })
+      }
+
+      const localPath = path.join(imagesDir, finalName)
+      if (!existsSync(localPath)) {
+        const res = await fetch(imageUrl)
+        if (!res.ok) throw new Error(`Image download failed: ${res.status}`)
+        const buffer = Buffer.from(await res.arrayBuffer())
+        writeFileSync(localPath, buffer)
+      }
+
+      result.success = true
+      result.localImagePath = localPath
+    } catch (error) {
+      result.error = error instanceof Error ? error.message : "Failed to save received image"
+    }
+
+    this.postMessage({ type: "saveReceivedImageResult", payload: result })
+  }
+
+  private async _handleOpenExternal(payload: OpenExternalPayload) {
+    try {
+      await env.openExternal(Uri.parse(payload.url))
+    } catch {
+      // ignore — can't open the browser
+    }
+  }
+
   private _handleGetSavedMessages(roomId: string) {
     const githuvDir = this._getGithuvDir()
     if (!githuvDir) {
@@ -514,6 +672,77 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
       }
     } catch {
       this.postMessage({ type: "savedMessages", payload: { messages: [] } })
+    }
+  }
+
+  /**
+   * Durable local archive (like WhatsApp's on-device message history). Merges
+   * the given messages by id into .githuv/messages-<roomId>.json so a rejoin
+   * can always restore what has been sent, even if IndexedDB was reset or the
+   * chat service is unreachable.
+   */
+  private async _handleSaveMessages(roomId: string, incoming: SavedChatMessage[]) {
+    if (!incoming.length) return
+
+    const githuvDir = this._getGithuvDir()
+    if (!githuvDir) return
+
+    const messagesFile = path.join(githuvDir, `messages-${roomId}.json`)
+    try {
+      const byId = new Map<string, SavedChatMessage>()
+      if (existsSync(messagesFile)) {
+        const data = readFileSync(messagesFile, "utf-8")
+        const existing = JSON.parse(data) as SavedChatMessage[]
+        for (const msg of existing) byId.set(msg.id, msg)
+      }
+      for (const msg of incoming) byId.set(msg.id, msg)
+
+      const merged = Array.from(byId.values()).sort((a, b) => a.timestamp - b.timestamp)
+      writeFileSync(messagesFile, JSON.stringify(merged, null, 2), "utf-8")
+    } catch {
+      // non-critical archive failure — the server (MongoDB) is the source of truth
+    }
+  }
+
+  private _handleGetSavedTasks() {
+    const githuvDir = this._getGithuvDir()
+    if (!githuvDir) {
+      this.postMessage({ type: "savedTasks", payload: { tasks: [] } })
+      return
+    }
+
+    const tasksFile = path.join(githuvDir, "tasks.json")
+    try {
+      if (existsSync(tasksFile)) {
+        const data = readFileSync(tasksFile, "utf-8")
+        const tasks = JSON.parse(data) as Task[]
+        this.postMessage({ type: "savedTasks", payload: { tasks } })
+      } else {
+        this.postMessage({ type: "savedTasks", payload: { tasks: [] } })
+      }
+    } catch {
+      this.postMessage({ type: "savedTasks", payload: { tasks: [] } })
+    }
+  }
+
+  /**
+   * Durable local archive for tasks (.githuv/tasks.json). The webview always
+   * sends the authoritative full task list (including deletions), so this
+   * replaces the file contents rather than merging, keeping the disk copy
+   * identical to what the user sees.
+   */
+  private _handleSaveTasks(tasks: Task[]) {
+    const githuvDir = this._getGithuvDir()
+    if (!githuvDir) return
+
+    const tasksFile = path.join(githuvDir, "tasks.json")
+    try {
+      const sorted = [...tasks].sort((a, b) => {
+        return a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0
+      })
+      writeFileSync(tasksFile, JSON.stringify(sorted, null, 2), "utf-8")
+    } catch {
+      // non-critical archive failure — IndexedDB remains the primary store
     }
   }
 
@@ -575,20 +804,51 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
       ? `<script>window.__GITHUV_STORED_TOKEN__=${JSON.stringify(storedToken)}</script>`
       : ""
 
+    const imagesDirUri = this._getImagesDirUri()
+    const imagesUri = imagesDirUri ? webview.asWebviewUri(imagesDirUri).toString() : null
+
+    const imagesUriScript = imagesUri
+      ? `<script>window.__GITHUV_IMAGES_URI__=${JSON.stringify(imagesUri)}</script>`
+      : ""
+
+    const chatUrlScript = `<script>window.__GITHUV_CHAT_URL__=${JSON.stringify(this._chatUrl)}</script>`
+    const viewScript = `<script>window.__GITHUV_VIEW__=${JSON.stringify(this.viewType)}</script>`
+    const routeScript = `<script>window.__GITHUV_ROUTE__=${JSON.stringify(this._route)}</script>`
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-eval'; connect-src http://localhost:4004 ws://localhost:4004 https://github.com https://api.github.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-eval'; img-src ${webview.cspSource} data: https://res.cloudinary.com https://*.cloudinary.com https://github.com https://*.github.com https://avatars.githubusercontent.com; connect-src http://localhost:4004 ws://localhost:4004 http://localhost:4002 ${this._chatUrl} ws://${new URL(this._chatUrl).host} https://github.com https://api.github.com;">
   <link rel="stylesheet" href="${styleUri}">
   <title>Githuv</title>
 </head>
 <body>
   ${tokenScript}
+  ${imagesUriScript}
+  ${chatUrlScript}
+  ${viewScript}
+  ${routeScript}
   <div id="root"></div>
   <script src="${scriptUri}"></script>
 </body>
 </html>`
+  }
+
+  private _getImagesDirUri(): Uri | null {
+    try {
+      const folders = workspace.workspaceFolders
+      if (!folders || folders.length === 0) return null
+      const folder = folders[0]
+      if (!folder) return null
+      const imagesDir = path.join(folder.uri.fsPath, ".githuv", "images")
+      if (!existsSync(imagesDir)) {
+        mkdirSync(imagesDir, { recursive: true })
+      }
+      return Uri.file(imagesDir)
+    } catch {
+      return null
+    }
   }
 }

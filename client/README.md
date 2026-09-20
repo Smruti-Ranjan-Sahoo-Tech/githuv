@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GithuV Client
+
+Next.js frontend for the **GithuV** AI-powered career growth platform. Connects GitHub activity with AI tools — resume generation, profile README creation, contribution streak recovery, and more.
+
+## Features
+
+- **Dashboard** — real-time GitHub stats (repos, stars, forks, followers, languages), career score, recent activity feed, repository browser
+- **Profile README Generator** — 6 themed templates, existing-README analysis, live rendered preview with source toggle, one-click publish
+- **Repository README Intelligence** — AI-generated READMEs from repo metadata, folder structure, configs, and features
+- **Resume Builder** — ATS-optimized resumes from GitHub data, AI content generation, LaTeX editor, PDF export, ATS scoring
+- **Profile Studio** — 5-step onboarding wizard (personal info, professional profile, projects, experience, branding)
+- **Strike Recovery** — contribution graph repair with text-to-grid, random patterns, custom art
+- **VS Code auth** — browser-based sign-in flow used by the Githuv VS Code extension (`/api/resume/*`, `/vscode-auth`)
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Framework** | Next.js 16 (App Router, React Compiler), React 19 |
+| **Styling** | Tailwind CSS v4, PostCSS |
+| **State** | Zustand 5 |
+| **Auth** | Firebase Auth + GitHub OAuth |
+| **HTTP** | Axios |
+| **Markdown** | react-markdown, remark-gfm, rehype-raw |
+| **PDF** | jspdf, html2canvas |
+| **Icons** | lucide-react, react-icons |
+| **Realtime** | socket.io-client |
+| **Notifications** | react-toastify |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+bun run dev        # starts on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Other scripts:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | Purpose |
+|---|---|
+| `bun run build` | Production build |
+| `bun run start` | Start production server |
+| `bun run lint` | Run ESLint |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment
 
-## Learn More
+Create `client/.env` with your Firebase client configuration:
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API key |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase auth domain |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase app ID |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Backend Proxy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The client proxies `/api/*` requests to the Githuv server via Next.js rewrites (`next.config.ts`):
 
-## Deploy on Vercel
+```
+/api/:path* → http://localhost:4002/api/:path*
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Local API routes under `src/app/api/resume/` forward cookie-authenticated requests to the backend for resume generation, LaTeX retrieval, AI feedback, and the VS Code extension flows.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+```
+client/
+├── src/
+│   ├── app/               # Pages (landing, login, dashboard, resume-builder, vscode-auth, etc.)
+│   │   ├── api/resume/    # Server-side proxy routes for resume features
+│   │   └── dashboard/     # profile-readme, readme-intelligence, repositories, resume, strike-recovery
+│   ├── components/        # Navbar, Dashboard, ProfileStudio, ResumeBuilder, etc.
+│   ├── store/             # Zustand stores (auth, GitHub data, profile studio, theme)
+│   ├── API/               # Axios instance
+│   └── config/            # Firebase client config
+└── public/                # Static assets
+```
+
+## Prerequisites
+
+- **Bun** runtime
+- **Githuv server** running on `http://localhost:4002`
+- **Chat service** running on `http://localhost:4004` (for chat features)
+- **Firebase project** with GitHub OAuth provider enabled
+- **MongoDB** running locally on port 27017
+
+See the [root README](../README.md) for full platform setup instructions.

@@ -3,6 +3,17 @@ export interface ChatMessage {
   role: "user" | "assistant" | "system"
   content: string
   timestamp: number
+  imageUrl?: string
+  imageLocalPath?: string
+}
+
+export interface LocalChatMessage extends ChatMessage {
+  roomId: string
+  sender: string
+  /** RxDB sync fields */
+  synced: boolean
+  delivered: boolean
+  deliveredAt?: number
 }
 
 export interface AuthResponse {
@@ -59,6 +70,11 @@ export interface SavedChatMessage {
   role: "user" | "assistant" | "system"
   content: string
   timestamp: number
+  sender?: string
+  imageUrl?: string
+  imagePublicId?: string
+  imageLocalPath?: string
+  localImagePath?: string
 }
 
 export interface GithubApiRequestPayload {
@@ -103,6 +119,71 @@ export interface WebviewAuthTokenPayload {
   issuedAt: number
 }
 
+export interface UploadImagePayload {
+  id: string
+  roomId: string
+  dataUrl: string
+  fileName: string
+}
+
+export interface UploadImageResultPayload {
+  id: string
+  success: boolean
+  imageUrl?: string
+  publicId?: string
+  localImagePath?: string
+  error?: string
+}
+
+export interface SaveReceivedImagePayload {
+  id: string
+  imageUrl: string
+  /** Proposed local file name (derived from the sender's copy or the CDN URL). */
+  fileName: string
+}
+
+export interface SaveReceivedImageResultPayload {
+  id: string
+  success: boolean
+  localImagePath?: string
+  error?: string
+}
+
+export interface OpenExternalPayload {
+  url: string
+}
+
+export type TaskStatus = "todo" | "in_progress" | "done";
+export type TaskPriority = "low" | "medium" | "high";
+
+export interface TaskUserRef {
+  userId: string;
+  username: string;
+  avatar: string | null;
+}
+
+export interface TaskRepoRef {
+  owner: string;
+  name: string;
+  fullName: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  tags: string[];
+  assignee: TaskUserRef | null;
+  dueDate: string | null;
+  /** Optional — null when no repository is detected/available. */
+  repository: TaskRepoRef | null;
+  createdBy: TaskUserRef;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type WebviewMessage =
   | { type: "navigate"; payload: { path: string } }
   | { type: "auth"; payload: { code: string } }
@@ -119,6 +200,12 @@ export type WebviewMessage =
   | { type: "insertText"; payload: InsertTextPayload }
   | { type: "saveChanges"; payload: SaveChangesPayload }
   | { type: "getSavedMessages"; payload: { roomId: string } }
+  | { type: "saveMessages"; payload: { roomId: string; messages: SavedChatMessage[] } }
+  | { type: "uploadImage"; payload: UploadImagePayload }
+  | { type: "saveReceivedImage"; payload: SaveReceivedImagePayload }
+  | { type: "openExternal"; payload: OpenExternalPayload }
+  | { type: "getSavedTasks" }
+  | { type: "saveTasks"; payload: { tasks: Task[] } }
 
 export type ExtensionMessage =
   | { type: "connectionStatus"; payload: { status: string } }
@@ -131,3 +218,6 @@ export type ExtensionMessage =
   | { type: "authToken"; payload: { token: string } }
   | { type: "savedMessages"; payload: { messages: SavedChatMessage[] } }
   | { type: "operationResult"; payload: { success: boolean; message: string } }
+  | { type: "uploadImageResult"; payload: UploadImageResultPayload }
+  | { type: "saveReceivedImageResult"; payload: SaveReceivedImageResultPayload }
+  | { type: "savedTasks"; payload: { tasks: Task[] } }

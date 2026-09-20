@@ -6,6 +6,32 @@ import { apiRequest } from "../helpers/api"
 const githubAccessTokenKey = "githubAccessToken"
 const webviewAuthKey = "githuv.auth.token"
 const webviewRawTokenKey = "githuv.auth.rawToken"
+const repoSessionKey = "githuv.auth.repoSession"
+
+export interface RepoSession {
+  repoOwner: string
+  repoName: string
+  repoId: string
+  username: string
+}
+
+function getRepoSessionFromStorage(): RepoSession | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = localStorage.getItem(repoSessionKey)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<RepoSession>
+    if (!parsed.repoOwner || !parsed.repoName || !parsed.repoId || !parsed.username) return null
+    return {
+      repoOwner: parsed.repoOwner,
+      repoName: parsed.repoName,
+      repoId: parsed.repoId,
+      username: parsed.username,
+    }
+  } catch {
+    return null
+  }
+}
 
 function base64UrlDecode(input: string): string {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/")
@@ -57,6 +83,7 @@ type GithubAuthState = {
   authToken: WebviewAuthTokenPayload | null
   username: string | null
   rawToken: string | null
+  repoSession: RepoSession | null
   loading: boolean
   error: string | null
   userCode: string | null
@@ -65,6 +92,7 @@ type GithubAuthState = {
   initialLoginCheck: () => () => void
   loginByGithub: (onStatus?: (message: string) => void) => Promise<boolean>
   receiveAuthToken: (token: string) => boolean
+  setRepoSession: (session: RepoSession | null) => void
   logout: () => Promise<boolean>
 }
 
@@ -77,6 +105,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
   authToken: initial.authToken,
   username: initial.username,
   rawToken: initial.rawToken,
+  repoSession: getRepoSessionFromStorage(),
   loading: true,
   error: null,
   userCode: null,
@@ -92,6 +121,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
       authToken: fresh.authToken,
       username: fresh.username,
       rawToken: fresh.rawToken,
+      repoSession: getRepoSessionFromStorage(),
     })
 
     return () => {}
@@ -103,6 +133,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
     try {
       localStorage.removeItem(webviewAuthKey)
       localStorage.removeItem(webviewRawTokenKey)
+      localStorage.removeItem(repoSessionKey)
       clearLegacyTokens()
 
       const result = await requestGithubAuth((progress) => {
@@ -188,6 +219,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
     }
 
     clearLegacyTokens()
+    localStorage.removeItem(repoSessionKey)
     localStorage.setItem(webviewAuthKey, JSON.stringify(payload))
     localStorage.setItem(webviewRawTokenKey, token)
 
@@ -195,6 +227,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
       authToken: payload,
       username: payload.username ?? null,
       rawToken: token,
+      repoSession: null,
       loading: false,
       error: null,
     })
@@ -202,16 +235,29 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
     return true
   },
 
+  setRepoSession: (session) => {
+    if (typeof window !== "undefined") {
+      if (session) {
+        localStorage.setItem(repoSessionKey, JSON.stringify(session))
+      } else {
+        localStorage.removeItem(repoSessionKey)
+      }
+    }
+    set({ repoSession: session })
+  },
+
   logout: async () => {
     try {
       localStorage.removeItem(webviewAuthKey)
       localStorage.removeItem(webviewRawTokenKey)
+      localStorage.removeItem(repoSessionKey)
       clearLegacyTokens()
 
       set({
         authToken: null,
         username: null,
         rawToken: null,
+        repoSession: null,
         loading: false,
         error: null,
       })

@@ -68,6 +68,10 @@ export function getWorkspaceInfo(): Promise<WorkspaceInfoPayload> {
   })
 }
 
+export function openExternal(url: string) {
+  sendMessage({ type: "openExternal", payload: { url } })
+}
+
 export function githubApiRequest<T = unknown>(
   endpoint: string,
   method: string,

@@ -11,6 +11,8 @@
   "activationEvents": [
     "onCommand:githuv-repo-chat",
     "onView:githuv.chat",
+    "onView:githuv.tasks",
+    "onView:githuv.repo",
     "onUri"
   ],
   "main": "dist/extension.js",
@@ -36,6 +38,16 @@
           "type": "webview",
           "id": "githuv.chat",
           "name": "Chat"
+        },
+        {
+          "type": "webview",
+          "id": "githuv.tasks",
+          "name": "Tasks"
+        },
+        {
+          "type": "webview",
+          "id": "githuv.repo",
+          "name": "Repository"
         }
       ]
     }

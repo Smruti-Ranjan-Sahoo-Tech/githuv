@@ -37,33 +37,34 @@ GithuV helps developers build a stronger professional presence by intelligently 
 - **Streak Recovery** — Restore contribution graph with backdated commits
 - **Contribution Art Visualizer** — Plan patterns, initials, symbols with grid previews
 
-### Upcoming — DevChat VS Code Extension
-- **Inline Chat** — Chat with your team directly inside VS Code. Share snippets, review PRs, and discuss changes without leaving the editor.
-- **AI Commands** — Generate READMEs, suggest commit messages, analyze code, and get career coaching from your editor.
-- **Workspace Sync** — View tasks, project boards, and team activity from VS Code. Accept invites and update status without switching contexts.
+### DevChat VS Code Extension
+- **Inline Chat** — Chat with your repository from a dedicated Githuv panel in the Activity Bar. Share snippets, review PRs, and discuss changes without leaving the editor.
+- **Editor Actions** — Copy messages to the clipboard, insert text at the cursor, and apply AI-suggested changes directly to files.
+- **Live Repo Chat** — Real-time room chat over Socket.IO, restricted to repo owners and collaborators. Message history persisted locally in the workspace and synced through the chat service.
+- **GitHub Sign-in** — Device-code OAuth + browser sign-in via the Githuv client; tokens stored in VS Code secrets.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Client (Next.js)                  │
-│                    Port 3000                         │
-│                                                      │
-│  Landing  →  Login (Firebase OAuth)  →  Dashboard   │
-│                                         │            │
-│              ┌──────────────────────────┘            │
-│              ▼                                       │
-│   ┌──────────────────┐   ┌───────────────────┐      │
-│   │ GitHub Analytics │   │  Profile Studio   │      │
-│   │ Strike Recovery  │   │  Resume Builder   │      │
-│   └──────────────────┘   └───────────────────┘      │
-│                                                      │
-│  Next.js Rewrites: /api/* → localhost:4002          │
-└──────────────────────┬──────────────────────────────┘
-                       │ HTTP
-                       ▼
+┌─────────────────────────────────────────────┐     ┌────────────────────────────┐
+│            Client (Next.js)                 │     │   VS Code Extension        │
+│                Port 3000                    │     │   (Githuv Webview Panel)   │
+│                                             │     │                            │
+│ Landing → Login (Firebase OAuth) → Dashboard│     │  Repo chat • editor actions│
+│                │                            │     │  GitHub sign-in            │
+│     ┌──────────┘                            │     └─────────────┬──────────────┘
+│     ▼                                       │                   │ Socket.IO
+│ ┌──────────────┐  ┌──────────────────┐      │                   ▼
+│ │GitHub Ana-  │  │Profile Studio    │      │        ┌─────────────────────┐
+│ │lytics       │  │Resume Builder    │      │        │  Chat Service      │
+│ └──────────────┘  └──────────────────┘      │        │  Socket.IO Port 4004│
+│                                             │        │  MongoDB + Cloudinary
+│ Next.js Rewrites: /api/* → localhost:4002  │        └─────────────────────┘
+└──────────────────┬──────────────────────────┘
+                   │ HTTP
+                   ▼
 ┌─────────────────────────────────────────────────────┐
 │                 Server (Express + Bun)               │
 │                    Port 4002                         │
@@ -91,6 +92,7 @@ GithuV helps developers build a stronger professional presence by intelligently 
 | **Auth** | Firebase Auth + GitHub OAuth, JWT (httpOnly cookies) |
 | **AI/LLM** | LangGraph, GPT-4o-mini (GitHub Models), Gemini 2.0 Flash Lite, Ollama (phi4-mini) |
 | **GitHub API** | Octokit |
+| **Realtime** | Socket.IO (chat service on port 4004) |
 | **PDF** | LaTeX (tectonic / xelatex / pdflatex) → Cloudinary |
 | **Icons** | lucide-react, react-icons |
 
@@ -120,10 +122,14 @@ githuv/
 │   │   └── util/         # Contribution grid utilities
 │   └── index.ts          # Server entry point
 ├── microservices/        # LaTeX-to-PDF compilation service
-│   ├── src/Route/        # Express POST /compile endpoint
-│   ├── services/         # Standalone Bun.serve compiler with auto-detection
-│   ├── bin/              # Tectonic binary
-│   └── scripts/          # Setup script (downloads tectonic)
+│   ├── pdf-service/      # Express POST /compile (xelatex) on port 3005
+│   │   ├── src/Route/    # Express endpoint
+│   │   └── services/     # Standalone Bun.serve compiler with auto-detection
+│   └── chat-service/     # Real-time Socket.IO chat service on port 4004
+│       ├── src/controller/  # Message persistence, sync & Cloudinary cleanup
+│       ├── src/routes/      # REST sync endpoints
+│       └── src/model/       # Mongoose schema with TTL-based expiry
+├── vscode/               # Githuv VS Code extension (webview + extension host)
 └── README.md
 ```
 
@@ -163,16 +169,35 @@ Required environment variables in `server/.env`:
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |
 
-### 2. Microservices Setup
+### 2. PDF Microservice Setup
 
 ```bash
-cd microservices
+cd microservices/pdf-service
 bun install
 bun run setup:tex   # downloads tectonic LaTeX compiler
 bun run dev          # starts on port 3005
 ```
 
-### 3. Client Setup
+### 3. Chat Service Setup
+
+```bash
+cd microservices/chat-service
+bun install
+cp .env.example .env   # (if available) or create .env with your credentials
+bun run dev            # starts on port 4004
+```
+
+Required environment variables in `microservices/chat-service/.env`:
+
+| Variable | Description |
+|---|---|
+| `MongoDB_URI` | MongoDB connection string |
+| `JWT_SERVER_SECREAT` | JWT signing secret (must match `server/.env`) |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+
+### 4. Client Setup
 
 ```bash
 cd client
@@ -263,24 +288,58 @@ The system creates backdated commits to a private GitHub repo (`githuv-official-
 
 ## API Overview
 
+**Server** (`/api` prefix, port 4002):
+
 | Route | Description |
+|---|---|
+| `POST /auth/login` | Firebase + GitHub OAuth login |
+| `POST /auth/vscode-token` | Issue VS Code extension token |
+| `POST /auth/vscode-token/device` | Start VS Code device-code flow |
+| `POST /auth/vscode-token/exchange` | Exchange device code for token |
+| `POST /auth/vscode/github` | Proxy GitHub API calls for the extension |
+| `GET /githuv/github-user` | Authenticated GitHub user data |
+| `GET /githuv/dashboard-data` | Aggregated GitHub stats |
+| `POST /githuv/create-repo` | Create private contribution repo |
+| `POST /githuv/print-contribution` | Print contribution pattern on grid |
+| `POST /githuv/profile-readme/generate` | Generate profile README with theme + feedback |
+| `GET /githuv/profile-readme/existing` | Fetch existing profile README from GitHub |
+| `POST /githuv/profile-readme/publish` | Publish generated README to profile repo |
+| `POST /githuv/repository-readme/generate` | Generate repository README |
+| `POST /githuv/repository-readme/publish` | Publish repository README |
+| `POST /githuv/repository-readme/undo` | Rollback repository README changes |
+| `GET /onboarding/me` | Current onboarding profile |
+| `POST /onboarding/step1..5` | Profile wizard steps |
+| `POST /resume/generate-ai-resume` | AI resume generation |
+| `POST /resume/generate-scratch` | Resume generation from scratch |
+| `GET /resume/list` | List user resumes |
+| `GET /resume/latex/:threadId` | Get LaTeX source for a thread |
+| `POST /resume/regenerate` | Regenerate a resume |
+| `POST /resume/chat/:threadId` | Chat with AI about a resume |
+| `POST /resume/feedback/:threadId` | Resume AI feedback |
+| `POST /resume/compile` | Compile LaTeX to PDF |
+| `DELETE /resume/:threadId` | Delete a resume |
+| `PUT /resume/:threadId` | Update a resume |
+| `GET /resume/pdf/:threadId` | Serve resume PDF |
+
+**Chat service** (`/api` prefix, port 4004):
+
+| Route | Description |
+|---|---|
+| `POST /messages/sync` | Push local-first messages to MongoDB |
+| `GET /messages/:roomId` | Full message history for a room |
+| `GET /messages/:roomId/since` | Incremental pull since a timestamp |
+| `POST /messages/delivered` | Mark messages as delivered (shortens TTL) |
+| `DELETE /messages/:roomId` | Delete messages (also removes images) |
+| `POST /images/upload` | Upload a chat image to Cloudinary |
+
+**Chat service events** (Socket.IO):
+
+| Event | Direction | Description |
 |---|---|---|
-| `POST /api/auth/login` | Firebase + GitHub OAuth login |
-| `GET /api/githuv/user` | Authenticated GitHub user data |
-| `GET /api/githuv/dashboard` | Aggregated GitHub stats |
-| `POST /api/githuv/create-repo` | Create private contribution repo |
-| `POST /api/githuv/profile-readme/generate` | Generate profile README with theme + feedback |
-| `GET /api/githuv/profile-readme/existing` | Fetch existing profile README from GitHub |
-| `POST /api/githuv/profile-readme/publish` | Publish generated README to profile repo |
-| `POST /api/githuv/repository-readme/generate` | Generate repository README |
-| `POST /api/githuv/repository-readme/publish` | Publish repository README |
-| `POST /api/githuv/repository-readme/undo` | Rollback repository README changes |
-| `POST /api/onboarding/step1..5` | Profile wizard steps |
-| `GET /api/resume` | List user resumes |
-| `POST /api/resume/generate-ai` | AI resume generation |
-| `POST /api/resume/compile-and-upload` | Manual LaTeX compilation |
-| `POST /api/contribution/create` | Create recovery commits |
-| `POST /api/contribution/daily` | Schedule daily recovery |
+| `joinRoom` | client → server | Join a room, receive history |
+| `send-message` | client → server | Broadcast + persist a message |
+| `receive-message` | server → client | Deliver message / system notices |
+| `message-delivered` | both | Confirm delivery, update TTL |
 
 ---
 

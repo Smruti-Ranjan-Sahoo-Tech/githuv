@@ -369,7 +369,7 @@ export default class ContributionController {
               },
             },
           },
-          { upsert: true, new: true }
+          { upsert: true, returnDocument: 'after' }
         );
       }
 

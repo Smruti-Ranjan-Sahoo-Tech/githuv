@@ -198,7 +198,7 @@ export default class auth {
                     },
                     {
                         upsert: true,
-                        new: true,
+                        returnDocument: 'after',
                         runValidators: false,
                     }
                 ).catch(() => null);
@@ -250,7 +250,7 @@ export default class auth {
                 },
                 {
                     upsert: true,
-                    new: true,
+                    returnDocument: 'after',
                     runValidators: false,
                 }
             ).catch(() => null);

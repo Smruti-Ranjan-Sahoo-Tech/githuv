@@ -52,33 +52,49 @@ const VSCodeAuthPage = () => {
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const launchedRef = useRef(false);
   const pendingGithubTokenRef = useRef<string | null>(null);
+  const completingRef = useRef(false);
 
   const completeAuth = useCallback(
     async (user: User, githubAccessToken: string) => {
+      if (completingRef.current) return;
+      completingRef.current = true;
+
+      setError(null);
       setRedirecting(true);
+      setLoading(true);
 
-      const firebaseIdToken = await user.getIdToken();
+      try {
+        const firebaseIdToken = await user.getIdToken();
 
-      const code = await fetchVSCodeToken(firebaseIdToken, githubAccessToken);
+        const code = await fetchVSCodeToken(firebaseIdToken, githubAccessToken);
 
-      const redirect = getRedirectUri();
-      const separator = redirect.startsWith("http") ? "?" : "#";
-      const url = `${redirect}${separator}code=${encodeURIComponent(code)}`;
-      setRedirectUrl(url);
+        const redirect = getRedirectUri();
+        const separator = redirect.startsWith("http") ? "?" : "#";
+        const url = `${redirect}${separator}code=${encodeURIComponent(code)}`;
+        setRedirectUrl(url);
 
-      const onBlur = () => {
-        launchedRef.current = true;
-      };
-      window.addEventListener("blur", onBlur);
+        const onBlur = () => {
+          launchedRef.current = true;
+        };
+        window.addEventListener("blur", onBlur);
 
-      window.location.href = url;
+        window.location.href = url;
 
-      window.setTimeout(() => {
-        window.removeEventListener("blur", onBlur);
-        if (!launchedRef.current) {
-          setManualOpen(true);
-        }
-      }, 2500);
+        window.setTimeout(() => {
+          window.removeEventListener("blur", onBlur);
+          if (!launchedRef.current) {
+            setManualOpen(true);
+          }
+        }, 2500);
+      } catch (err) {
+        pendingGithubTokenRef.current = null;
+        setRedirecting(false);
+        setManualOpen(false);
+        setLoading(false);
+        setError(getErrorMessage(err));
+      } finally {
+        completingRef.current = false;
+      }
     },
     [],
   );
@@ -86,8 +102,8 @@ const VSCodeAuthPage = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && pendingGithubTokenRef.current) {
-        completeAuth(user, pendingGithubTokenRef.current)
-          .catch(() => setLoading(false));
+        void completeAuth(user, pendingGithubTokenRef.current)
+          .finally(() => setLoading(false));
         return;
       }
 
@@ -129,7 +145,7 @@ const VSCodeAuthPage = () => {
           </h1>
 
           <p className="mt-3 text-slate-400">
-            Sign in to authorize the VS Code extension. You'll be returned to
+            Sign in to authorize the VS Code extension. You&apos;ll be returned to
             VS Code automatically.
           </p>
         </div>

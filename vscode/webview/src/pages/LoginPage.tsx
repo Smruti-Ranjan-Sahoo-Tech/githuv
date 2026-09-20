@@ -6,6 +6,7 @@ import {
   githubApiRequest,
 } from "../helpers/extensionBridge"
 import { receiveMessage, sendMessage } from "../helpers/postMessage"
+import { getViewRoute } from "../helpers/viewContext"
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -83,9 +84,10 @@ export default function LoginPage() {
       isCollaborator = false
     }
 
+    let repoData: { id?: number; owner?: { login?: string } } | null = null
     if (!isCollaborator) {
       try {
-        const repoData = await githubApiRequest<{ owner?: { login?: string } }>(
+        repoData = await githubApiRequest<{ id?: number; owner?: { login?: string } }>(
           `/repos/${workspace.repoOwner}/${workspace.repoName}`,
           "GET",
           rawToken,
@@ -106,9 +108,36 @@ export default function LoginPage() {
       return
     }
 
-    navigate("/chat", {
+    // Resolve the stable numeric repository id so chat rooms are keyed by id,
+    // not by the (renamable) repo name.
+    if (!repoData?.id) {
+      try {
+        repoData = await githubApiRequest<{ id?: number }>(
+          `/repos/${workspace.repoOwner}/${workspace.repoName}`,
+          "GET",
+          rawToken,
+        )
+      } catch {
+        repoData = null
+      }
+    }
+    const repoId = repoData?.id ? String(repoData.id) : null
+    if (!repoId) {
+      setLoading(false)
+      setError("Could not determine the repository ID for the chat room.")
+      return
+    }
+
+    useGithubAuthStore.getState().setRepoSession({
+      repoOwner: workspace.repoOwner,
+      repoName: workspace.repoName,
+      repoId,
+      username: currentUser.login,
+    })
+
+    navigate(getViewRoute(), {
       state: {
-        roomId: currentUser.login,
+        roomId: repoId,
         roomName: workspace.repoName,
         repoOwner: workspace.repoOwner,
         username: currentUser.login,
