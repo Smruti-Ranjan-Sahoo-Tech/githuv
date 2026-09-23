@@ -1,5 +1,5 @@
 import { type ResumeState } from "../State";
-import { askGithub } from "../../../llm/github.llm";
+import { askGemini } from "../../../llm/gemini.llm";
 
 export async function askOllamaForLatex(state: ResumeState): Promise<Partial<ResumeState>> {
   const pageCount = state.pageCount || 1;
@@ -35,7 +35,7 @@ ${state.themeTex}
 Generate the ATS-optimized LaTeX resume now.
 `;
 
-  let latexCode = await askGithub(prompt, state.githubAccessToken);
+  let latexCode = await askGemini(prompt);
 
   latexCode = latexCode.replace(/(\\\\\s+)\[/g, '$1\\lbrack{}');
   latexCode = latexCode.replace(/(\\\\\s+)\]/g, '$1\\rbrack{}');

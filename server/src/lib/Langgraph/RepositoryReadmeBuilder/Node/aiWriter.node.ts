@@ -1,5 +1,5 @@
 import { type RepositoryReadmeState } from "../State";
-import { askGithub } from "../../../llm/github.llm";
+import { askGemini } from "../../../llm/gemini.llm";
 
 const MAX_PROMPT_LENGTH = 60000;
 
@@ -92,10 +92,7 @@ ${repoKnowledgeJson}
 Generate the README now.
 `;
 
-  const generatedReadme = await askGithub(
-    prompt,
-    state.githubAccessToken
-  );
+  const generatedReadme = await askGemini(prompt);
 
   return { generatedReadme };
 }

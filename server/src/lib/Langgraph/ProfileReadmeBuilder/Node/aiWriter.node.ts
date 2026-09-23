@@ -1,5 +1,5 @@
 import { type ProfileReadmeState } from "../State";
-import { askGithub } from "../../../llm/github.llm";
+import { askGemini } from "../../../llm/gemini.llm";
 
 const MAX_PROMPT_LENGTH = 40000;
 
@@ -55,7 +55,7 @@ Remember:
 - If the user already has a profile README, incorporate any valid custom links or personal projects from it.
 `.trim();
 
-  const generatedProfileReadme = await askGithub(prompt, state.githubAccessToken);
+  const generatedProfileReadme = await askGemini(prompt);
 
   return { generatedProfileReadme };
 }

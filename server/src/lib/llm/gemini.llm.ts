@@ -2,7 +2,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import "dotenv/config";
 
 const llm = new ChatGoogleGenerativeAI({
-  model: "gemini-2.0-flash-lite",
+  model: "gemini-3.5-flash-lite",
   temperature: 0.2,
   apiKey: process.env.GOOGLE_API_KEY,
 });

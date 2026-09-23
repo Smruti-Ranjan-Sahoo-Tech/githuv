@@ -162,8 +162,8 @@ Required environment variables in `server/.env`:
 | `PORT` | Server port (default: 4002) |
 | `JWT_SERVER_SECREAT` | JWT signing secret |
 | `serviceAccount` | Firebase Admin SDK service account JSON |
-| `GOOGLE_API_KEY` | Google AI / Gemini API key |
-| `GITHUB_ACCESS_TOKEN` | GitHub token for AI model access |
+| `GOOGLE_API_KEY` | Google AI / Gemini API key (README/profile/resume generation) |
+| `GITHUB_ACCESS_TOKEN` | GitHub token for GitHub API access |
 | `PDF_SERVICE_URL` | LaTeX microservice URL (default: `http://localhost:3005`) |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
