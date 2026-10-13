@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -113,7 +113,7 @@ interface ChatMessage {
   content: string;
 }
 
-export default function ResumeBuilderOutputPage() {
+function ResumeBuilderOutputContent() {
   const searchParams = useSearchParams();
   const threadId = searchParams.get("threadId");
 
@@ -821,5 +821,13 @@ export default function ResumeBuilderOutputPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResumeBuilderOutputPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading resume editor...</div>}>
+      <ResumeBuilderOutputContent />
+    </Suspense>
   );
 }
