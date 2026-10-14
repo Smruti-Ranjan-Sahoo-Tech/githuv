@@ -14,14 +14,16 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 4002;
-const clientOrigin = process.env.CLIENT_URL?.replace(/\/+$/, "");
+const clientOrigins = process.env.CLIENT_URL?.split(",").map((origin) =>
+  origin.trim().replace(/\/+$/, "")
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: clientOrigin,
+    origin: clientOrigins,
     credentials: true
   })
 );
