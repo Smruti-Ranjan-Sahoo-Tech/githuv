@@ -28,7 +28,10 @@ const getErrorMessage = (error: unknown) => {
     : "Something went wrong.";
 };
 
-export const useFirebaseAuthStore = create<FirebaseAuthState>((set) => ({
+let authListenerCount = 0;
+let authUnsubscribe: (() => void) | null = null;
+
+export const useFirebaseAuthStore = create<FirebaseAuthState>((set, get) => ({
   user: null,
   githubAccessToken:
     typeof window !== "undefined"
@@ -38,37 +41,60 @@ export const useFirebaseAuthStore = create<FirebaseAuthState>((set) => ({
   error: null,
 
   initialLoginCheck: () => {
-    set({ loading: true, error: null });
+    authListenerCount += 1;
 
-    return onAuthStateChanged(
-      auth,
-      async (user) => {
-        const token =
-          typeof window !== "undefined"
-            ? sessionStorage.getItem(githubAccessTokenKey)
-            : null;
+    if (!authUnsubscribe) {
+      if (!get().user) {
+        set({ loading: true, error: null });
+      }
 
-        if (user) {
-          set({ loading: true, error: null });
-          await ensureBackendSession();
-        }
+      authUnsubscribe = onAuthStateChanged(
+        auth,
+        async (user) => {
+          const token =
+            typeof window !== "undefined"
+              ? sessionStorage.getItem(githubAccessTokenKey)
+              : null;
 
-        set({
-          user,
-          githubAccessToken: token,
-          loading: false,
-          error: null,
-        });
-      },
-      (error) => {
-        set({
-          user: null,
-          githubAccessToken: null,
-          loading: false,
-          error: getErrorMessage(error),
-        });
-      },
-    );
+          const alreadyResolved = get().user?.uid === user?.uid;
+
+          if (user && !alreadyResolved) {
+            set({ loading: true, error: null });
+            await ensureBackendSession();
+          }
+
+          set({
+            user,
+            githubAccessToken: token,
+            loading: false,
+            error: null,
+          });
+        },
+        (error) => {
+          set({
+            user: null,
+            githubAccessToken: null,
+            loading: false,
+            error: getErrorMessage(error),
+          });
+        },
+      );
+    }
+
+    let active = true;
+
+    return () => {
+      if (!active) return;
+      active = false;
+
+      authListenerCount -= 1;
+
+      if (authListenerCount <= 0) {
+        authListenerCount = 0;
+        authUnsubscribe?.();
+        authUnsubscribe = null;
+      }
+    };
   },
 
   loginByGithub: async () => {
