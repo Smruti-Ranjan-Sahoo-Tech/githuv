@@ -15,11 +15,12 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const apiUrl =
+    const apiUrl = (
       process.env.NEXT_PUBLIC_API_URL ??
       (process.env.NODE_ENV === "production"
         ? "https://githuv.onrender.com"
-        : "http://localhost:4002");
+        : "http://localhost:4002")
+    ).replace(/\/+$/, "");
     return [
       {
         source: "/api/:path*",

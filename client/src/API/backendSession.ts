@@ -36,6 +36,7 @@ export function ensureBackendSession(): Promise<boolean> {
         },
         credentials: "include",
         body: JSON.stringify({ accessToken }),
+        signal: AbortSignal.timeout(10_000),
       });
 
       if (response.ok) {

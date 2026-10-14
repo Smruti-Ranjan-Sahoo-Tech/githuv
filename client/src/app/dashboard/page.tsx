@@ -23,15 +23,9 @@ import {
 
 
 export default function Page() {
-  const { user, loading, initialLoginCheck } =
-    useFirebaseAuthStore();
+  const { user, loading } = useFirebaseAuthStore();
   const { data, loading: ghLoading, error, fetchDashboardData } = useGithubDataStore();
   const dashboardLoading = loading || ghLoading || (!!user && !data && !error);
-
-  useEffect(() => {
-    const unsubscribe = initialLoginCheck();
-    return unsubscribe;
-  }, [initialLoginCheck]);
 
   useEffect(() => {
     if (user) {
