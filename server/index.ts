@@ -15,7 +15,9 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 4002;
 const clientOrigins = process.env.CLIENT_URL?.split(",").map((origin) =>
-  origin.trim().replace(/\/+$/, "")
+  // Render environment variables are usually entered without shell quotes, but
+  // trim them here as well so copied dotenv values still match the Origin.
+  origin.trim().replace(/^['"]+|['"]+$/g, "").replace(/\/+$/, "")
 );
 
 app.use(express.json());

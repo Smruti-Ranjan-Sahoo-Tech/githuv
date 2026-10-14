@@ -30,6 +30,16 @@ const pendingVSCodeSessions = new Map<string, VSCodeSession>();
 
 const createExchangeCode = () => crypto.randomBytes(24).toString("base64url");
 
+const authCookieOptions = () => {
+    const isProd = process.env.NODE_ENV === "production";
+    return {
+        httpOnly: true,
+        sameSite: (isProd ? "none" : "lax") as "none" | "lax",
+        secure: isProd,
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+    };
+};
+
 const storePendingVSCodeToken = (token: string) => {
     const code = createExchangeCode();
     pendingVSCodeTokens.set(code, {
@@ -129,12 +139,7 @@ export default class auth {
                 }
             );
             const token = generateToken({ githubUsername, githubId, firebaseUID })
-            res.cookie("token", token, {
-                httpOnly: true,
-                sameSite: "lax",
-                secure: false,
-                maxAge: 30 * 24 * 60 * 60 * 1000,
-            });
+            res.cookie("token", token, authCookieOptions());
 
             const profile = await UserProfile.findOne({ user: user._id });
             const safeUser = user.toObject ? user.toObject() : user;
@@ -152,6 +157,43 @@ export default class auth {
             res.status(500).json({ message: "Login failed", error });
         }
 
+    }
+
+    static async session(req: any, res: any) {
+        try {
+            const { accessToken } = req.body;
+            if (!accessToken) {
+                return res.status(400).json({
+                    message: "Firebase access token is required",
+                });
+            }
+
+            const decodedToken = await admin.auth().verifyIdToken(accessToken);
+            const firebaseUID = decodedToken.uid;
+
+            const user = await User.findOne({ firebaseUID });
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            const token = generateToken({
+                githubUsername: user.githubUsername,
+                githubId: user.githubId,
+                firebaseUID,
+            });
+            res.cookie("token", token, authCookieOptions());
+
+            return res.status(200).json({ success: true });
+        } catch (error) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+    }
+
+    static async logout(_req: any, res: any) {
+        const { maxAge, ...clearOptions } = authCookieOptions();
+        void maxAge;
+        res.clearCookie("token", clearOptions);
+        return res.status(200).json({ success: true });
     }
 
     static async vscodeToken(req: any, res: any) {

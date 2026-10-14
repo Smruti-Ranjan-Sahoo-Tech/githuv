@@ -7,6 +7,7 @@ import {
 } from "firebase/auth";
 import { create } from "zustand";
 import { auth, githubProvider } from "@/config/firebase";
+import { ensureBackendSession, resetBackendSession } from "@/API/backendSession";
 
 const githubAccessTokenKey = "githubAccessToken";
 
@@ -41,11 +42,16 @@ export const useFirebaseAuthStore = create<FirebaseAuthState>((set) => ({
 
     return onAuthStateChanged(
       auth,
-      (user) => {
+      async (user) => {
         const token =
           typeof window !== "undefined"
             ? sessionStorage.getItem(githubAccessTokenKey)
             : null;
+
+        if (user) {
+          set({ loading: true, error: null });
+          await ensureBackendSession();
+        }
 
         set({
           user,
@@ -74,6 +80,7 @@ export const useFirebaseAuthStore = create<FirebaseAuthState>((set) => ({
     try {
       // Clear any stale token first
       sessionStorage.removeItem(githubAccessTokenKey);
+      resetBackendSession();
 
       const result = await signInWithPopup(
         auth,
@@ -147,6 +154,8 @@ export const useFirebaseAuthStore = create<FirebaseAuthState>((set) => ({
       });
 
       await signOut(auth);
+
+      resetBackendSession();
 
       sessionStorage.removeItem(
         githubAccessTokenKey,

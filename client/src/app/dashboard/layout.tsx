@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Dashboard/Sidebar/Sidebar";
 import ThemeProvider from "@/components/ThemeProvider";
 import { ToastContainer } from "react-toastify";
 import { Menu } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
+import { useFirebaseAuthStore } from "@/store/useFirebaseAuthStore";
 
 export default function DashboardLayout({
   children,
@@ -13,6 +15,33 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const router = useRouter();
+  const { user, loading, initialLoginCheck } = useFirebaseAuthStore();
+
+  useEffect(() => {
+    const unsubscribe = initialLoginCheck();
+    return unsubscribe;
+  }, [initialLoginCheck]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ background: "var(--dashboard-bg, #0a0a0a)" }}
+      >
+        <div
+          className="h-10 w-10 animate-spin rounded-full border-2"
+          style={{ borderColor: "var(--border-subtle, #333)", borderTopColor: "var(--accent, #22c55e)" }}
+        />
+      </div>
+    );
+  }
 
   return (
     <ThemeProvider>
