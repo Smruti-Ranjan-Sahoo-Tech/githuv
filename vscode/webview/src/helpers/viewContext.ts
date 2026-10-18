@@ -1,11 +1,9 @@
 const VIEW_ROUTES: Record<string, string> = {
-  "githuv.chat": "/chat",
-  "githuv.tasks": "/tasks",
-  "githuv.repo": "/repo",
+  "githuv.sidebar": "/chat",
 }
 
 export function getViewId(): string {
-  return typeof window !== "undefined" ? window.__GITHUV_VIEW__ ?? "githuv.chat" : "githuv.chat"
+  return typeof window !== "undefined" ? window.__GITHUV_VIEW__ ?? "githuv.sidebar" : "githuv.sidebar"
 }
 
 export function getViewRoute(): string {

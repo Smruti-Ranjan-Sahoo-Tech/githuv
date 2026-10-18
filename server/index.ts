@@ -41,6 +41,10 @@ app.get("/", (req, res) => {
     });
 })
 
+app.get("/test", (req, res) => {
+    res.status(200).json({ status: "ok", service: "server" });
+})
+
 
 app.listen(port,async()=>{
     //Database connection

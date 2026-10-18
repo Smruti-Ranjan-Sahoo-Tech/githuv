@@ -115,6 +115,10 @@ const server = Bun.serve({
     const url = new URL(req.url);
     const method = req.method;
 
+    if (url.pathname === "/test" && method === "GET") {
+      return Response.json({ status: "ok", service: "tex-to-pdf" });
+    }
+
     if (url.pathname === "/health" && method === "GET") {
       const compiler = findCompiler();
       return Response.json({

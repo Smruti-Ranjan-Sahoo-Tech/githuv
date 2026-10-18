@@ -66,3 +66,12 @@ input:focus-visible {
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out;
 }
+
+/* User supplied dark chat doodle wallpaper. */
+.chat-wallpaper {
+  background-color: #0d1117;
+  background-image: linear-gradient(rgba(13, 17, 23, 0.2), rgba(13, 17, 23, 0.2)), url("/chat-doodle-wallpaper.png");
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
+}

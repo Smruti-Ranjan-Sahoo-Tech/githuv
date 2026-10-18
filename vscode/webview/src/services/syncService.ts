@@ -11,8 +11,8 @@ import {
 
 const chatBaseUrl: string =
   typeof window !== "undefined"
-    ? (window as unknown as { __GITHUV_CHAT_URL__?: string }).__GITHUV_CHAT_URL__ ?? "http://localhost:4004"
-    : "http://localhost:4004"
+    ? (window as unknown as { __GITHUV_CHAT_URL__?: string }).__GITHUV_CHAT_URL__ ?? "https://githuv-8icz.onrender.com"
+    : "https://githuv-8icz.onrender.com"
 
 /**
  * Local-first sync: pushes every unsynced RxDB message up to the chat

@@ -212,6 +212,10 @@ app.get("/", (_req, res) => {
     });
 });
 
+app.get("/test", (_req, res) => {
+    res.status(200).json({ status: "ok", service: "chat-service" });
+});
+
 // Start Server
 server.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);

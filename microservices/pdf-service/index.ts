@@ -9,6 +9,10 @@ app.use(
   })
 );
 
+app.get("/test", (_req, res) => {
+  res.status(200).json({ status: "ok", service: "pdf-service" });
+});
+
 app.use("/", compileRoute);
 
 app.listen(3005, () => {

@@ -25,14 +25,14 @@ function loadEnv(basePath: string): Record<string, string> {
 
 export function activate(context: vscode.ExtensionContext) {
   const env = loadEnv(context.extensionUri.fsPath)
-  const apiUrl = env.API_URL ?? "http://localhost:4002"
-  const clientUrl = env.CLIENT_URL ?? "http://localhost:3000"
-  const chatUrl = env.CHAT_URL ?? "http://localhost:4004"
+  // The packaged extension does not include the developer's local .env file.
+  // Keep local development configurable while making installed builds usable.
+  const apiUrl = env.API_URL ?? "https://githuv.onrender.com"
+  const clientUrl = env.CLIENT_URL ?? "https://githuv.netlify.app"
+  const chatUrl = env.CHAT_URL ?? "https://githuv-8icz.onrender.com"
 
   const viewConfigs = [
-    { viewType: "githuv.chat", route: "/chat" },
-    { viewType: "githuv.tasks", route: "/tasks" },
-    { viewType: "githuv.repo", route: "/repo" },
+    { viewType: "githuv.sidebar", route: "/chat" },
   ]
 
   const providers = new Map<string, GithuvWebviewProvider>()

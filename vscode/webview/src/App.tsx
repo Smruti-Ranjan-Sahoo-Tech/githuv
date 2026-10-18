@@ -11,9 +11,7 @@ import { getViewRoute } from "./helpers/viewContext"
 export default function App() {
   const rawToken = useGithubAuthStore((s) => s.rawToken)
 
-  // Native VS Code views replace the old in-webview sidebar: each view only
-  // ever renders its own page. While signed out, the whole webview shows the
-  // login screen so the user can authenticate from any view.
+  // While signed out, show login before the shared app shell and its navigation.
   if (!rawToken) {
     return <LoginPage />
   }

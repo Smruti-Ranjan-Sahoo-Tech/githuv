@@ -34,9 +34,9 @@ import type {
 import { GithubAuthService } from "../services/GithubAuthService"
 
 const ROUTE_TO_VIEW: Record<string, string> = {
-  "/chat": "githuv.chat",
-  "/tasks": "githuv.tasks",
-  "/repo": "githuv.repo",
+  "/chat": "githuv.sidebar",
+  "/tasks": "githuv.sidebar",
+  "/repo": "githuv.sidebar",
 }
 
 export { ROUTE_TO_VIEW }
@@ -67,7 +67,7 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
   private _callbackServer?: Server
 
   constructor(
-    /** Native VS Code view id this provider backs (githuv.chat / githuv.tasks / githuv.repo). */
+    /** Native VS Code view id this provider backs. */
     readonly viewType: string,
     /** Initial SPA route for this view (e.g. "/chat"). */
     private readonly _route: string,
@@ -292,8 +292,7 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
   }
 
   /**
-   * When the SPA asks to navigate to another native view, focus that view in
-   * VS Code (each contributed view gets a `<viewId>.focus` command).
+   * Keep the shared Githuv sidebar focused when the SPA navigates.
    */
   private _focusViewForPath(path: string) {
     const viewId = ROUTE_TO_VIEW[path]
@@ -820,7 +819,7 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-eval'; img-src ${webview.cspSource} data: https://res.cloudinary.com https://*.cloudinary.com https://github.com https://*.github.com https://avatars.githubusercontent.com; connect-src http://localhost:4004 ws://localhost:4004 http://localhost:4002 ${this._chatUrl} ws://${new URL(this._chatUrl).host} https://github.com https://api.github.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-eval'; img-src ${webview.cspSource} data: https://res.cloudinary.com https://*.cloudinary.com https://github.com https://*.github.com https://avatars.githubusercontent.com; connect-src http://localhost:4004 ws://localhost:4004 wss://localhost:4004 http://localhost:4002 ${this._chatUrl} ${new URL(this._chatUrl).protocol === "https:" ? "wss" : "ws"}://${new URL(this._chatUrl).host} https://github.com https://api.github.com;">
   <link rel="stylesheet" href="${styleUri}">
   <title>Githuv</title>
 </head>

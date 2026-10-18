@@ -4,7 +4,7 @@ Chat with your GitHub repository right from the editor. The extension adds a **G
 
 ## Features
 
-- **Native VS Code navigation** — **Chat**, **Tasks** and **Repository** are separate webview views in the Githuv Activity Bar panel (`githuv.chat`, `githuv.tasks`, `githuv.repo`), so each opens with a single click and the full panel width is used. The panel is opened via the `Githuv: Open Chat` command (`githuv-repo-chat`).
+- **Shared VS Code sidebar** — Chat, Tasks and Repository are available from one Githuv view in the Activity Bar. Use the in-app navigation rail to switch between them. The panel is opened via the `Githuv: Open Chat` command (`githuv-repo-chat`).
 - **GitHub sign-in** — Device-code OAuth flow plus a browser-based sign-in through the Githuv client. Tokens are stored in VS Code secrets and re-injected on reload.
 - **Repository awareness** — Detects the current workspace's repo (`owner/repo`) by reading the git remote from `.git/config`.
 - **Access control** — Allows chat only if you are the repo owner or a collaborator.
