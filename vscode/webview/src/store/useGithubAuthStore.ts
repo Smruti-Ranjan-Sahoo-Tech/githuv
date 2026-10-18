@@ -128,7 +128,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
   },
 
   loginByGithub: async (onStatus) => {
-    set({ loading: true, error: null, userCode: null, verificationUri: null })
+    set({ loading: true, error: null, userCode: null, verificationUri: null, repoSession: null })
 
     try {
       localStorage.removeItem(webviewAuthKey)

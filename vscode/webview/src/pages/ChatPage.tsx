@@ -63,7 +63,7 @@ const ChatPage = () => {
   const session = useGithubAuthStore((s) => s.repoSession);
 
   const initialRoomId = state.roomId ?? session?.repoId ?? "";
-  const initialUsername = state.username ?? session?.username ?? "Lucifer";
+  const initialUsername = state.username ?? session?.username ?? "";
   const initialRoomName = state.roomName ?? session?.repoName ?? "";
 
   const socketRef = useRef<Socket | null>(null);
@@ -340,7 +340,11 @@ const ChatPage = () => {
 
   return (
     <div className="flex h-full flex-col bg-[#0d1117] text-[#e6edf3]">
-      <TopBar repoName={roomName || undefined} onSettings={handleLogout} />
+      <TopBar
+        repoName={roomName || undefined}
+        onSettings={() => sendMessage({ type: "openSettings" })}
+        onLogout={handleLogout}
+      />
 
       {!hasJoined ? (
         <div className="flex flex-1 items-center justify-center">

@@ -5,14 +5,16 @@ import LetterPage from "./pages/LetterPage"
 import RepoPage from "./pages/RepoPage"
 import TasksPage from "./pages/TasksPage"
 import AppShell from "./components/AppShell"
-import { useGithubAuthStore } from "./store/useGithubAuthStore"
+import { isTokenValid, useGithubAuthStore } from "./store/useGithubAuthStore"
 import { getViewRoute } from "./helpers/viewContext"
 
 export default function App() {
   const rawToken = useGithubAuthStore((s) => s.rawToken)
+  const repoSession = useGithubAuthStore((s) => s.repoSession)
 
-  // While signed out, show login before the shared app shell and its navigation.
-  if (!rawToken) {
+  // Do not mount ChatPage until auth restoration and repository verification
+  // have both completed. A token alone does not provide a room or username.
+  if (!rawToken || !repoSession || !isTokenValid()) {
     return <LoginPage />
   }
 

@@ -226,7 +226,8 @@ export default function LoginPage() {
         )}
 
         {loading && statusText && (
-          <div className="rounded-lg border border-[#30363d] bg-[#161b22] p-4 text-center">
+          <div role="status" aria-live="polite" className="rounded-lg border border-[#30363d] bg-[#161b22] p-4 text-center">
+            <span aria-hidden="true" className="mx-auto mb-2 block h-5 w-5 animate-spin rounded-full border-2 border-[#30363d] border-t-[#58a6ff]" />
             <p className="text-xs text-[#8b949e]">{statusText}</p>
           </div>
         )}
