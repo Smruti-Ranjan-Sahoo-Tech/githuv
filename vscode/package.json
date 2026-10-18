@@ -1,31 +1,53 @@
 {
   "name": "githuv",
-  "displayName": "Githuv",
-  "description": "Chat with your GitHub repository",
+  "displayName": "GithuV",
+  "description": "AI-powered GitHub repository chat and developer productivity tools",
   "version": "0.0.1",
+  "publisher": "githuv",
   "private": true,
   "type": "module",
   "engines": {
     "vscode": "^1.125.0"
   },
+  "categories": [
+    "Other",
+    "AI"
+  ],
+  "keywords": [
+    "github",
+    "ai",
+    "repository",
+    "chat",
+    "developer-tools",
+    "productivity"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Smruti-Ranjan-Sahoo-Tech/githuv.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Smruti-Ranjan-Sahoo-Tech/githuv/issues"
+  },
+  "homepage": "https://github.com/Smruti-Ranjan-Sahoo-Tech/githuv#readme",
+  "icon": "media/githuv-marketplace.png",
   "activationEvents": [
     "onCommand:githuv-repo-chat",
     "onView:githuv.sidebar",
     "onUri"
   ],
-  "main": "dist/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "githuv-repo-chat",
-        "title": "Githuv: Open Chat"
+        "title": "GithuV: Open Chat"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
           "id": "githuv",
-          "title": "Githuv",
+          "title": "GithuV",
           "icon": "media/icon.svg"
         }
       ]
@@ -35,11 +57,10 @@
         {
           "type": "webview",
           "id": "githuv.sidebar",
-          "name": "Githuv"
+          "name": "GithuV"
         }
       ]
     }
-
   },
   "scripts": {
     "compile": "tsc -p ./",
@@ -51,7 +72,7 @@
     "dev": "bun run watch:extension & bun run watch:webview",
     "lint": "tsc --noEmit",
     "vscode:prepublish": "bun run build",
-    "install:local": "bun run build && npx @vscode/vsce package --allow-missing-repository --no-dependencies && code --install-extension githuv-0.0.1.vsix --force"
+    "install:local": "bun run build && bunx vsce package --allow-missing-repository --no-dependencies && code --install-extension githuv-0.0.1.vsix --force"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -63,5 +84,3 @@
     "typescript": "^5.5.4"
   }
 }
-
-
