@@ -421,26 +421,33 @@ const ChatPage = () => {
               </div>
             )}
 
-            {messages.map((msg) => (
-              <div key={msg.id} className="mb-4 animate-fade-in">
-                {msg.role === "system" ? (
-                  <div className="text-center text-xs text-[#d29922]">{msg.content}</div>
-                ) : (
-                  <ChatMessageComponent
-                    message={{
-                      id: msg.id,
-                      role: msg.role,
-                      content: msg.content,
-                      timestamp: msg.timestamp,
-                      imageUrl: msg.imageUrl ?? undefined,
-                      imageLocalPath: msg.localImagePath ?? undefined,
-                    }}
-                    sender={msg.sender}
-                    delivered={msg.delivered}
-                  />
-                )}
-              </div>
-            ))}
+            {messages.map((msg) => {
+              const isMine =
+                !!msg.sender &&
+                !!username &&
+                msg.sender.trim().toLowerCase() === username.trim().toLowerCase()
+              return (
+                <div key={msg.id} className="mb-2 animate-fade-in">
+                  {msg.role === "system" ? (
+                    <div className="text-center text-xs text-[#d29922]">{msg.content}</div>
+                  ) : (
+                    <ChatMessageComponent
+                      message={{
+                        id: msg.id,
+                        role: msg.role,
+                        content: msg.content,
+                        timestamp: msg.timestamp,
+                        imageUrl: msg.imageUrl ?? undefined,
+                        imageLocalPath: msg.localImagePath ?? undefined,
+                      }}
+                      sender={msg.sender}
+                      delivered={msg.delivered}
+                      isMine={isMine}
+                    />
+                  )}
+                </div>
+              )
+            })}
           </div>
 
           <form

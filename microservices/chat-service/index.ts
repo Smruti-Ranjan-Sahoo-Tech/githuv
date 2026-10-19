@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import connectDB from "./src/config/database";
 import { bulkUpsert, markDelivered, startCleanupScheduler } from "./src/controller/message.controller";
 import routes from "./src/routes";
+import { registerTaskSocket, taskRoom } from "./src/services/taskEvents";
 
 dotenv.config();
 
@@ -54,6 +55,8 @@ const io = new Server(server, {
         methods: ["GET", "POST"],
     },
 });
+
+registerTaskSocket(io);
 
 // Middleware
 app.use(cors());
@@ -112,6 +115,15 @@ io.on("connection", (socket) => {
             time: Date.now(),
             type: "system",
         });
+    });
+
+    // Join a repository's task board — task mutations are broadcast here so
+    // every user viewing that repository sees them live.
+    socket.on("join-tasks", ({ repoKey }: { repoKey?: string }) => {
+        const key = typeof repoKey === "string" ? repoKey.trim().toLowerCase() : "";
+        if (!key) return;
+        socket.join(taskRoom(key));
+        console.log(`${socket.data.username} joined task room ${key}`);
     });
 
     // Send Message — broadcast first, persist to MongoDB after (local-first friendly)

@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useGithubAuthStore, isTokenValid } from "../store/useGithubAuthStore"
-import {
-  getWorkspaceInfo,
-  githubApiRequest,
-} from "../helpers/extensionBridge"
 import { receiveMessage, sendMessage } from "../helpers/postMessage"
 import { getViewRoute } from "../helpers/viewContext"
+import { ensureRepoSession } from "../services/repoSessionService"
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -38,111 +35,17 @@ export default function LoginPage() {
       return
     }
 
-    setStatusText("Checking workspace...")
-
-    let workspace
-    try {
-      workspace = await getWorkspaceInfo()
-    } catch {
+    // Resolves the room for the repository open in this window (reusing the
+    // stored session when this repository was visited before).
+    const result = await ensureRepoSession(setStatusText)
+    if (!result.ok) {
       setLoading(false)
-      setError("Failed to read workspace info")
+      setError(result.error)
       return
     }
 
-    if (!workspace.isRepo || !workspace.repoOwner || !workspace.repoName) {
-      setLoading(false)
-      setError("Current workspace is not connected to a GitHub repository")
-      return
-    }
-
-    setStatusText("Verifying repository access...")
-
-    let currentUser: { login: string } | null = null
-    try {
-      currentUser = await githubApiRequest<{ login: string }>("/user", "GET", rawToken)
-    } catch {
-      setLoading(false)
-      setError("Failed to fetch GitHub user info")
-      return
-    }
-
-    if (!currentUser?.login) {
-      setLoading(false)
-      setError("Could not determine GitHub username")
-      return
-    }
-
-    let isCollaborator = false
-    try {
-      await githubApiRequest(
-        `/repos/${workspace.repoOwner}/${workspace.repoName}/collaborators/${currentUser.login}`,
-        "GET",
-        rawToken,
-      )
-      isCollaborator = true
-    } catch {
-      isCollaborator = false
-    }
-
-    let repoData: { id?: number; owner?: { login?: string } } | null = null
-    if (!isCollaborator) {
-      try {
-        repoData = await githubApiRequest<{ id?: number; owner?: { login?: string } }>(
-          `/repos/${workspace.repoOwner}/${workspace.repoName}`,
-          "GET",
-          rawToken,
-        )
-        if (repoData?.owner?.login === currentUser.login) {
-          isCollaborator = true
-        }
-      } catch {
-        // not the owner either
-      }
-    }
-
-    if (!isCollaborator) {
-      setLoading(false)
-      setError(
-        `You (${currentUser.login}) are not a collaborator of ${workspace.repoOwner}/${workspace.repoName}`,
-      )
-      return
-    }
-
-    // Resolve the stable numeric repository id so chat rooms are keyed by id,
-    // not by the (renamable) repo name.
-    if (!repoData?.id) {
-      try {
-        repoData = await githubApiRequest<{ id?: number }>(
-          `/repos/${workspace.repoOwner}/${workspace.repoName}`,
-          "GET",
-          rawToken,
-        )
-      } catch {
-        repoData = null
-      }
-    }
-    const repoId = repoData?.id ? String(repoData.id) : null
-    if (!repoId) {
-      setLoading(false)
-      setError("Could not determine the repository ID for the chat room.")
-      return
-    }
-
-    useGithubAuthStore.getState().setRepoSession({
-      repoOwner: workspace.repoOwner,
-      repoName: workspace.repoName,
-      repoId,
-      username: currentUser.login,
-    })
-
-    navigate(getViewRoute(), {
-      state: {
-        roomId: repoId,
-        roomName: workspace.repoName,
-        repoOwner: workspace.repoOwner,
-        username: currentUser.login,
-      },
-    })
+    setLoading(false)
+    navigate(getViewRoute())
   }
 
   useEffect(() => {

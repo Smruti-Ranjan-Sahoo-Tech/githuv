@@ -249,6 +249,7 @@ export default class auth {
             const token = generateVSCodeToken({
                 uid,
                 username,
+                githubAccessToken,
                 issuedAt: Date.now(),
             });
 
@@ -300,6 +301,7 @@ export default class auth {
             const token = generateVSCodeToken({
                 uid: String(githubUser.id),
                 username: githubUser.login,
+                githubAccessToken,
                 issuedAt: Date.now(),
             });
 

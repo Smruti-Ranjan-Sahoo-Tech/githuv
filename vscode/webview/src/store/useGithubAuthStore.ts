@@ -7,6 +7,7 @@ const githubAccessTokenKey = "githubAccessToken"
 const webviewAuthKey = "githuv.auth.token"
 const webviewRawTokenKey = "githuv.auth.rawToken"
 const repoSessionKey = "githuv.auth.repoSession"
+const repoSessionsKey = "githuv.auth.repoSessions"
 
 export interface RepoSession {
   repoOwner: string
@@ -15,11 +16,13 @@ export interface RepoSession {
   username: string
 }
 
-function getRepoSessionFromStorage(): RepoSession | null {
-  if (typeof window === "undefined") return null
+function sessionMapKey(owner: string, name: string): string {
+  return `${owner.trim().toLowerCase()}/${name.trim().toLowerCase()}`
+}
+
+function parseRepoSession(raw: string | null): RepoSession | null {
+  if (!raw) return null
   try {
-    const raw = localStorage.getItem(repoSessionKey)
-    if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<RepoSession>
     if (!parsed.repoOwner || !parsed.repoName || !parsed.repoId || !parsed.username) return null
     return {
@@ -31,6 +34,66 @@ function getRepoSessionFromStorage(): RepoSession | null {
   } catch {
     return null
   }
+}
+
+function getRepoSessionFromStorage(): RepoSession | null {
+  if (typeof window === "undefined") return null
+  return parseRepoSession(localStorage.getItem(repoSessionKey))
+}
+
+function readSessionMap(): Record<string, RepoSession> {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = localStorage.getItem(repoSessionsKey)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Record<string, RepoSession>
+    return parsed && typeof parsed === "object" ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeSessionMap(map: Record<string, RepoSession>) {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem(repoSessionsKey, JSON.stringify(map))
+  } catch {
+    // storage full — non critical
+  }
+}
+
+/**
+ * Finds the stored chat session for a specific repository. Every VS Code
+ * window keeps its own repository entry, so opening several repositories in
+ * several windows always restores the matching room instead of whichever
+ * repository was signed in last.
+ */
+export function getStoredRepoSession(owner: string, name: string): RepoSession | null {
+  if (typeof window === "undefined") return null
+  const fromMap = readSessionMap()[sessionMapKey(owner, name)]
+  if (fromMap) return fromMap
+  // Backward compatibility: single-session key written by older versions.
+  const legacy = getRepoSessionFromStorage()
+  if (
+    legacy &&
+    legacy.repoOwner.trim().toLowerCase() === owner.trim().toLowerCase() &&
+    legacy.repoName.trim().toLowerCase() === name.trim().toLowerCase()
+  ) {
+    return legacy
+  }
+  return null
+}
+
+function clearStoredRepoSessions() {
+  if (typeof window === "undefined") return
+  localStorage.removeItem(repoSessionKey)
+  localStorage.removeItem(repoSessionsKey)
+}
+
+/** Drops the in-memory session only (kept when a workspace cannot be resolved). */
+function dropLegacyRepoSessionKey() {
+  if (typeof window === "undefined") return
+  localStorage.removeItem(repoSessionKey)
 }
 
 function base64UrlDecode(input: string): string {
@@ -101,11 +164,25 @@ function clearLegacyTokens() {
   localStorage.removeItem(githubAccessTokenKey)
 }
 
+function readStoredUid(): string | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = localStorage.getItem(webviewAuthKey)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as WebviewAuthTokenPayload
+    return parsed.uid || null
+  } catch {
+    return null
+  }
+}
+
 export const useGithubAuthStore = create<GithubAuthState>((set) => ({
   authToken: initial.authToken,
   username: initial.username,
   rawToken: initial.rawToken,
-  repoSession: getRepoSessionFromStorage(),
+  // Never trust a repository session from storage before it has been matched
+  // against the repository that is actually open in this window.
+  repoSession: null,
   loading: true,
   error: null,
   userCode: null,
@@ -121,7 +198,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
       authToken: fresh.authToken,
       username: fresh.username,
       rawToken: fresh.rawToken,
-      repoSession: getRepoSessionFromStorage(),
+      repoSession: null,
     })
 
     return () => {}
@@ -133,7 +210,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
     try {
       localStorage.removeItem(webviewAuthKey)
       localStorage.removeItem(webviewRawTokenKey)
-      localStorage.removeItem(repoSessionKey)
+      clearStoredRepoSessions()
       clearLegacyTokens()
 
       const result = await requestGithubAuth((progress) => {
@@ -219,7 +296,13 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
     }
 
     clearLegacyTokens()
-    localStorage.removeItem(repoSessionKey)
+    // Keep the per-repository sessions when the signed-in account did not
+    // change (typical webview reload) so every window reopens its own room
+    // without re-verifying against GitHub. Drop them on account switch.
+    const previousUid = readStoredUid()
+    if (previousUid && previousUid !== payload.uid) {
+      clearStoredRepoSessions()
+    }
     localStorage.setItem(webviewAuthKey, JSON.stringify(payload))
     localStorage.setItem(webviewRawTokenKey, token)
 
@@ -238,9 +321,12 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
   setRepoSession: (session) => {
     if (typeof window !== "undefined") {
       if (session) {
+        const map = readSessionMap()
+        map[sessionMapKey(session.repoOwner, session.repoName)] = session
+        writeSessionMap(map)
         localStorage.setItem(repoSessionKey, JSON.stringify(session))
       } else {
-        localStorage.removeItem(repoSessionKey)
+        dropLegacyRepoSessionKey()
       }
     }
     set({ repoSession: session })
@@ -250,7 +336,7 @@ export const useGithubAuthStore = create<GithubAuthState>((set) => ({
     try {
       localStorage.removeItem(webviewAuthKey)
       localStorage.removeItem(webviewRawTokenKey)
-      localStorage.removeItem(repoSessionKey)
+      clearStoredRepoSessions()
       clearLegacyTokens()
 
       set({

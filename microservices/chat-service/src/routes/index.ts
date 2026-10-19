@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { upload } from "../config/cloudinary";
+import { requireAuth } from "../middleware/auth";
 import {
     bulkUpsert,
     deleteMessages,
@@ -8,6 +9,12 @@ import {
     markDelivered,
     type SyncMessageInput,
 } from "../controller/message.controller";
+import {
+    deleteTask,
+    listTasks,
+    upsertTasks,
+    type TaskInput,
+} from "../controller/task.controller";
 
 const router = Router();
 
@@ -66,6 +73,42 @@ router.delete("/messages/:roomId", async (req, res) => {
         res.json({ success: true, ...result });
     } catch (err) {
         res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Failed to delete messages" });
+    }
+});
+
+// ── Durable tasks (per user + repository, survives reinstalls / restarts) ──
+router.get("/tasks", requireAuth, async (req, res) => {
+    try {
+        const repoKey = typeof req.query.repoKey === "string" ? req.query.repoKey.toLowerCase() : "";
+        const { tasks, deletedIds } = await listTasks(req.user!, repoKey);
+        res.json({ success: true, tasks, deletedIds });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Failed to load tasks" });
+    }
+});
+
+router.post("/tasks/sync", requireAuth, async (req, res) => {
+    try {
+        const inputs: TaskInput[] = Array.isArray(req.body?.tasks) ? req.body.tasks : [];
+        const result = await upsertTasks(req.user!, inputs);
+        res.json({ success: true, ...result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Task sync failed" });
+    }
+});
+
+router.delete("/tasks/:id", requireAuth, async (req, res) => {
+    try {
+        const id = typeof req.params.id === "string" ? req.params.id : "";
+        const repoKey = typeof req.query.repoKey === "string" ? req.query.repoKey.toLowerCase() : "";
+        if (!id) {
+            res.status(400).json({ success: false, error: "Task id is required" });
+            return;
+        }
+        const deleted = await deleteTask(req.user!, id, repoKey);
+        res.json({ success: true, deleted });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Failed to delete task" });
     }
 });
 

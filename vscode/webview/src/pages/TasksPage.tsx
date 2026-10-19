@@ -19,6 +19,9 @@ export default function TasksPage() {
   const authToken = useGithubAuthStore((s) => s.authToken)
 
   const init = useTaskStore((s) => s.init)
+  const refresh = useTaskStore((s) => s.refresh)
+  const refreshing = useTaskStore((s) => s.refreshing)
+  const refreshRepoScope = useTaskStore((s) => s.refreshRepoScope)
   const openCreate = useTaskStore((s) => s.openCreate)
   const formOpen = useTaskStore((s) => s.formOpen)
   const selectedId = useTaskStore((s) => s.selectedId)
@@ -35,7 +38,8 @@ export default function TasksPage() {
       return
     }
     void init()
-  }, [rawToken, username, navigate, init])
+    void refreshRepoScope()
+  }, [rawToken, username, navigate, init, refreshRepoScope])
 
   useEffect(() => {
     let cancelled = false
@@ -90,16 +94,40 @@ export default function TasksPage() {
             {totalTasks === 0 ? "No tasks" : `${totalTasks} task${totalTasks === 1 ? "" : "s"}`}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="flex items-center gap-1.5 rounded-lg bg-[#238636] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#2ea043]"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Create Task
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={refreshing}
+            title="Refresh tasks"
+            className="flex items-center gap-1.5 rounded-lg border border-[#30363d] px-3 py-1.5 text-sm font-semibold text-[#8b949e] transition-colors hover:border-[#58a6ff] hover:text-[#58a6ff] disabled:opacity-50"
+          >
+            <svg
+              className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="flex items-center gap-1.5 rounded-lg bg-[#238636] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#2ea043]"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Create Task
+          </button>
+        </div>
       </div>
 
       <div className="border-b border-[#21262d] bg-[#161b22] px-4 pb-2 pt-3">

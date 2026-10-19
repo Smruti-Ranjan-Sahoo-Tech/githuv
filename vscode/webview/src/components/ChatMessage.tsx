@@ -19,26 +19,25 @@ function githubAvatarUrl(login: string): string {
   return `https://github.com/${encodeURIComponent(login)}.png?size=64`
 }
 
-function Avatar({ login, align }: { login?: string; align: "left" | "right" }) {
+function Avatar({ login }: { login?: string }) {
   const [failed, setFailed] = useState(false)
   const safeLogin = login ?? ""
   const initials = (safeLogin || "?").slice(0, 2).toUpperCase()
-  return (
-    <div className={`flex shrink-0 flex-col items-center gap-1 ${align === "right" ? "order-2" : ""}`}>
-      {failed || !safeLogin ? (
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#30363d] text-[10px] font-semibold text-[#8b949e]">
-          {initials}
-        </div>
-      ) : (
-        <img
-          src={githubAvatarUrl(safeLogin)}
-          alt={safeLogin}
-          title={safeLogin}
-          onError={() => setFailed(true)}
-          className="h-8 w-8 rounded-full border border-[#30363d] bg-[#161b22] object-cover"
-        />
-      )}
+  if (failed || !safeLogin) {
+    return (
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#30363d] text-[10px] font-semibold text-[#8b949e]">
+        {initials}
       </div>
+    )
+  }
+  return (
+    <img
+      src={githubAvatarUrl(safeLogin)}
+      alt={safeLogin}
+      title={safeLogin}
+      onError={() => setFailed(true)}
+      className="h-8 w-8 shrink-0 rounded-full border border-[#30363d] bg-[#161b22] object-cover"
+    />
   )
 }
 
@@ -46,11 +45,14 @@ interface ChatMessageProps {
   message: ChatMessageType
   sender?: string
   delivered?: boolean
+  /** True when the current user wrote this message — right-aligned like WhatsApp. */
+  isMine?: boolean
 }
 
-export default function ChatMessage({ message, sender, delivered }: ChatMessageProps) {
-  const isUser = message.role === "user"
+export default function ChatMessage({ message, sender, delivered, isMine }: ChatMessageProps) {
   const displaySender = sender ?? "Githuv"
+  // Fall back to the legacy role-based guess for callers that do not pass it.
+  const mine = isMine ?? message.role === "user"
   const imageSrc = resolveImageSrc(message)
   const [imageOpen, setImageOpen] = useState(false)
 
@@ -77,23 +79,18 @@ export default function ChatMessage({ message, sender, delivered }: ChatMessageP
   }
 
   return (
-    <div className={`mb-3 flex gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
-      {!isUser && message.role !== "system" && <Avatar login={displaySender} align="left" />}
+    <div className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+      {!mine && <Avatar login={displaySender} />}
+
       <div
-        className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm ${
-          isUser
-            ? "bg-[#238636] text-white"
-            : "border border-[#30363d] bg-[#161b22] text-[#e6edf3]"
+        className={`max-w-[80%] px-3.5 py-2 text-sm shadow-sm ${
+          mine
+            ? "rounded-2xl rounded-br-md bg-[#238636] text-white"
+            : "rounded-2xl rounded-bl-md border border-[#30363d] bg-[#161b22] text-[#e6edf3]"
         }`}
       >
-        {displaySender && (
-          <div
-            className={`mb-0.5 flex items-center gap-2 text-xs font-semibold ${
-              isUser ? "justify-end text-[#7ee787]" : "text-[#58a6ff]"
-            }`}
-          >
-            <span className={isUser ? "order-1" : "order-2"}>{displaySender}</span>
-          </div>
+        {!mine && (
+          <div className="mb-0.5 text-xs font-semibold text-[#58a6ff]">{displaySender}</div>
         )}
 
         {imageSrc && (
@@ -126,19 +123,25 @@ export default function ChatMessage({ message, sender, delivered }: ChatMessageP
         {message.content && (
           <div className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</div>
         )}
-        <div className={`mt-1 flex items-center gap-2 text-[10px] ${isUser ? "text-white/60" : "text-[#8b949e]"}`}>
+
+        <div
+          className={`mt-1 flex items-center justify-end gap-1.5 text-[10px] ${
+            mine ? "text-white/70" : "text-[#8b949e]"
+          }`}
+        >
           <span>
             {new Date(message.timestamp).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })}
           </span>
-          {isUser && (
-            <span className={delivered ? "text-[#7ee787]" : "text-[#d29922]"}>
-              {delivered ? "✓✓ delivered" : "✓ sent"}
+          {mine && (
+            <span className={delivered ? "text-[#b8f7c6]" : "text-[#d9eadb]"}>
+              {delivered ? "✓✓" : "✓"}
             </span>
           )}
         </div>
+
         {message.role === "assistant" && (
           <div className="mt-2 flex gap-2 border-t border-[#30363d]/50 pt-2">
             <button
@@ -162,7 +165,6 @@ export default function ChatMessage({ message, sender, delivered }: ChatMessageP
           </div>
         )}
       </div>
-      {isUser && <Avatar login={displaySender} align="right" />}
     </div>
   )
 }

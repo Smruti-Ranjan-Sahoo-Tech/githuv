@@ -88,17 +88,21 @@ export const generateVSCodeToken = (
   payload: VSCodeTokenPayload,
   expiresIn: jwt.SignOptions["expiresIn"] = "30d"
 ): string => {
-  return jwt.sign(
-    {
-      ...payload,
-      v: VSCodeTokenVersion,
-    },
-    getSecret(),
-    {
-      algorithm: "HS256",
-      expiresIn,
-    }
-  );
+  const { githubAccessToken, ...rest } = payload;
+  const claims: Record<string, unknown> = {
+    ...rest,
+    v: VSCodeTokenVersion,
+  };
+  if (githubAccessToken) {
+    // Encrypted `gh` claim — verifyVSCodeToken reads it back. Keeps the GitHub
+    // proxy working after a restart (the in-memory session map is only a
+    // fallback for older tokens).
+    claims.gh = encryptSensitive(JSON.stringify({ githubAccessToken }));
+  }
+  return jwt.sign(claims, getSecret(), {
+    algorithm: "HS256",
+    expiresIn,
+  });
 };
 
 export const verifyVSCodeToken = (

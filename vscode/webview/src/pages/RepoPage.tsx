@@ -6,7 +6,7 @@ import { getWorkspaceInfo, githubApiRequest, openExternal } from "../helpers/ext
 import { sendMessage } from "../helpers/postMessage"
 import type { WorkspaceInfoPayload } from "@shared/types"
 
-type Tab = "pulls" | "issues" | "commits"
+type Tab = "pulls" | "issues" | "commits" | "branches"
 
 interface PullRequest {
   number: number
@@ -43,10 +43,17 @@ interface Commit {
   html_url?: string
 }
 
+interface Branch {
+  name: string
+  protected?: boolean
+  commit?: { sha?: string }
+}
+
 const tabs: { id: Tab; label: string }[] = [
   { id: "pulls", label: "Pull Requests" },
   { id: "issues", label: "Issues" },
   { id: "commits", label: "Commits" },
+  { id: "branches", label: "Branches" },
 ]
 
 const fmt = (iso?: string) =>
@@ -73,7 +80,7 @@ export default function RepoPage() {
 
   const [tab, setTab] = useState<Tab>("pulls")
   const [workspace, setWorkspace] = useState<WorkspaceInfoPayload | null>(null)
-  const [data, setData] = useState<PullRequest[] | Issue[] | Commit[] | null>(null)
+  const [data, setData] = useState<PullRequest[] | Issue[] | Commit[] | Branch[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
@@ -108,11 +115,14 @@ export default function RepoPage() {
           case "commits":
             endpoint = `${path}/commits?per_page=50`
             break
+          case "branches":
+            endpoint = `${path}/branches?per_page=100`
+            break
         }
 
         const result = await githubApiRequest<unknown>(endpoint, "GET", rawToken)
         const list = Array.isArray(result) ? result : []
-        setData(list as PullRequest[] | Issue[] | Commit[])
+        setData(list as PullRequest[] | Issue[] | Commit[] | Branch[])
         setLastRefreshed(new Date())
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch repository data")
@@ -164,7 +174,8 @@ export default function RepoPage() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            disabled={!workspace?.isRepo}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               tab === t.id
                 ? "bg-[#238636] text-white"
                 : "text-[#8b949e] hover:bg-[#30363d] hover:text-[#e6edf3]"
@@ -176,7 +187,7 @@ export default function RepoPage() {
 
         <button
           onClick={() => void fetchTab(tab)}
-          disabled={loading}
+          disabled={loading || !workspace?.isRepo}
           className="ml-auto rounded-lg border border-[#30363d] px-3 py-1 text-xs font-semibold text-[#8b949e] transition-colors hover:border-[#58a6ff] hover:text-[#58a6ff] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Loading…" : "Refresh"}
@@ -184,6 +195,13 @@ export default function RepoPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
+        {workspace && !workspace.isRepo && (
+          <div className="rounded-lg border border-[#d29922]/30 bg-[#d29922]/10 p-4 text-sm text-[#d29922]">
+            This workspace is not connected to a GitHub repository. Open a
+            repository folder to see pull requests, issues, commits and branches.
+          </div>
+        )}
+
         {error && (
           <div className="mb-3 rounded-lg border border-[#f85149]/30 bg-[#f85149]/10 p-3 text-sm text-[#f85149]">
             {error}
@@ -202,11 +220,11 @@ export default function RepoPage() {
           </div>
         )}
 
-        {!loading && data && tab === "pulls" && (
+        {!loading && data && !error && tab === "pulls" && (
           <PullList items={data as PullRequest[]} onOpen={openItem} />
         )}
 
-        {!loading && tab === "issues" && (
+        {!loading && !error && workspace?.isRepo && tab === "issues" && (
           <>
             {visibleIssues.length === 0 ? (
               <Empty label="No issues" />
@@ -254,9 +272,9 @@ export default function RepoPage() {
           </>
         )}
 
-        {!loading && data && tab === "pulls" && (data as PullRequest[]).length === 0 && <Empty label="No pull requests" />}
+        {!loading && data && !error && tab === "pulls" && (data as PullRequest[]).length === 0 && <Empty label="No pull requests" />}
 
-        {!loading && tab === "commits" && (
+        {!loading && !error && workspace?.isRepo && tab === "commits" && (
           <>
             {!data || (data as Commit[]).length === 0 ? (
               <Empty label="No commits" />
@@ -292,6 +310,52 @@ export default function RepoPage() {
                     </li>
                   )
                 })}
+              </ul>
+            )}
+          </>
+        )}
+
+        {!loading && !error && workspace?.isRepo && tab === "branches" && (
+          <>
+            {!data || (data as Branch[]).length === 0 ? (
+              <Empty label="No branches" />
+            ) : (
+              <ul className="space-y-2">
+                {(data as Branch[]).map((branch) => (
+                  <li
+                    key={branch.name}
+                    onClick={() =>
+                      openItem(
+                        `https://github.com/${encodeURIComponent(owner ?? "")}/${encodeURIComponent(
+                          repo ?? ""
+                        )}/tree/${encodeURIComponent(branch.name)}`
+                      )
+                    }
+                    className="cursor-pointer rounded-lg border border-[#30363d] bg-[#161b22] px-3 py-2.5 transition-colors hover:border-[#58a6ff]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <svg className="h-4 w-4 shrink-0 text-[#8b949e]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 3v12M6 15a3 3 0 100 6 3 3 0 000-6zM6 6a3 3 0 100-6 3 3 0 000 6zM18 9a3 3 0 100-6 3 3 0 000 6zm0 0v3a6 6 0 01-6 6H9" />
+                        </svg>
+                        <span className="truncate text-sm font-medium text-[#e6edf3]">{branch.name}</span>
+                        {branch.protected && (
+                          <span className="shrink-0 rounded-full border border-[#8b949e] px-1.5 py-px text-[10px] text-[#8b949e]">
+                            Protected
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        {branch.commit?.sha && (
+                          <code className="font-mono text-[11px] text-[#58a6ff]">
+                            {branch.commit.sha.slice(0, 7)}
+                          </code>
+                        )}
+                        <ExternalIcon />
+                      </div>
+                    </div>
+                  </li>
+                ))}
               </ul>
             )}
           </>

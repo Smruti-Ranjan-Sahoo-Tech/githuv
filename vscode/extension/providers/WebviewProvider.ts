@@ -1,5 +1,5 @@
 import path from "node:path"
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs"
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from "node:fs"
 import { createServer, type Server } from "node:http"
 import type { AddressInfo } from "node:net"
 import type {
@@ -57,6 +57,80 @@ function parseGitRemoteUrl(remoteUrl: string): { owner: string; repo: string } |
     if (owner && repo) {
       return { owner, repo }
     }
+  }
+  return null
+}
+
+/**
+ * Walks up from `startDir` looking for a `.git` entry. The opened folder is
+ * often a subdirectory of the real repository (e.g. a monorepo package), so
+ * checking only the folder root misses the repo entirely.
+ */
+function findGitRepoRoot(startDir: string): string | null {
+  let current = path.resolve(startDir)
+  const root = path.parse(current).root
+
+  for (;;) {
+    if (existsSync(path.join(current, ".git"))) return current
+    if (current === root) return null
+    current = path.dirname(current)
+  }
+}
+
+/**
+ * Resolves the actual git directory: a `.git` file (worktree / submodule)
+ * points at the real directory, and worktrees keep the shared config (with the
+ * remotes) one level up via a `commondir` file.
+ */
+function resolveGitDir(gitPath: string): string | null {
+  let dir: string | null = null
+  try {
+    if (existsSync(gitPath) && statSync(gitPath).isFile()) {
+      const content = readFileSync(gitPath, "utf-8").trim()
+      const match = content.match(/^gitdir:\s*(.+)$/m)
+      const target = match?.[1]?.trim()
+      if (!target) return null
+      dir = path.isAbsolute(target) ? target : path.resolve(path.dirname(gitPath), target)
+    } else if (existsSync(gitPath)) {
+      dir = gitPath
+    }
+  } catch {
+    return null
+  }
+  if (!dir) return null
+
+  try {
+    const commonPath = path.join(dir, "commondir")
+    if (existsSync(commonPath)) {
+      const common = readFileSync(commonPath, "utf-8").trim()
+      const commonDir = path.isAbsolute(common) ? common : path.resolve(dir, common)
+      if (existsSync(path.join(commonDir, "config"))) return commonDir
+    }
+  } catch {
+    // ignore — fall back to the resolved dir
+  }
+
+  return dir
+}
+
+/**
+ * Picks the best GitHub remote from a git config: `origin` first, then any
+ * other remote that points at github.com.
+ */
+function pickGithubRemoteUrl(gitConfig: string): string | null {
+  const remotes = new Map<string, string>()
+  const sections = gitConfig.split(/^\s*\[remote "/m)
+  for (const section of sections.slice(1)) {
+    const name = section.slice(0, section.indexOf('"'))
+    const url = section.match(/^\s*url\s*=\s*(.+)$/m)?.[1]?.trim()
+    if (name && url) remotes.set(name, url)
+  }
+
+  const origin = remotes.get("origin")
+  if (origin && parseGitRemoteUrl(origin)) return origin
+
+  for (const url of remotes.values()) {
+    if (parseGitRemoteUrl(url)) return url
   }
   return null
 }
@@ -306,12 +380,7 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
 
     try {
       const folders = workspace.workspaceFolders
-      if (!folders || folders.length === 0) {
-        this.postMessage({ type: "workspaceInfo", payload })
-        return
-      }
-
-      const folder = folders[0]
+      const folder = folders?.[0]
       if (!folder) {
         this.postMessage({ type: "workspaceInfo", payload })
         return
@@ -320,29 +389,31 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
       const folderPath = folder.uri.fsPath
       payload.folderPath = folderPath
 
-      const gitConfigPath = path.join(folderPath, ".git", "config")
+      // The opened folder may be a subdirectory of the actual repository
+      // (e.g. a monorepo package folder), so walk up until `.git` is found.
+      const repoRoot = findGitRepoRoot(folderPath)
+      if (!repoRoot) {
+        this.postMessage({ type: "workspaceInfo", payload })
+        return
+      }
+
+      const gitDir = resolveGitDir(path.join(repoRoot, ".git"))
+      if (!gitDir) {
+        this.postMessage({ type: "workspaceInfo", payload })
+        return
+      }
+
       let gitConfig: string
       try {
-        gitConfig = readFileSync(gitConfigPath, "utf-8")
+        gitConfig = readFileSync(path.join(gitDir, "config"), "utf-8")
       } catch {
         this.postMessage({ type: "workspaceInfo", payload })
         return
       }
 
-      const remoteMatch = gitConfig.match(/\[remote "origin"\]\s*\n\s*url\s*=\s*(.+)/)
-      if (!remoteMatch) {
-        this.postMessage({ type: "workspaceInfo", payload })
-        return
-      }
-
-      const remoteUrl = remoteMatch[1]?.trim()
-      if (!remoteUrl) {
-        this.postMessage({ type: "workspaceInfo", payload })
-        return
-      }
-      const parsed = parseGitRemoteUrl(remoteUrl)
-
-      if (!parsed) {
+      const remoteUrl = pickGithubRemoteUrl(gitConfig)
+      const parsed = remoteUrl ? parseGitRemoteUrl(remoteUrl) : null
+      if (!remoteUrl || !parsed) {
         this.postMessage({ type: "workspaceInfo", payload })
         return
       }
@@ -374,11 +445,22 @@ export class GithuvWebviewProvider implements WebviewViewProvider {
         message?: string
       }
 
+      const status = result.status ?? response.status
+      let error: string | undefined
+      if (status >= 400) {
+        const data = result.data
+        const dataMessage =
+          data && typeof data === "object" && "message" in (data as Record<string, unknown>)
+            ? String((data as { message: unknown }).message)
+            : undefined
+        error = result.message ?? dataMessage ?? `GitHub API request failed (${status})`
+      }
+
       const responsePayload: GithubApiResponsePayload = {
         id,
-        status: result.status ?? response.status,
+        status,
         data: result.data,
-        error: result.message,
+        error,
       }
 
       this.postMessage({ type: "githubApiResponse", payload: responsePayload })
