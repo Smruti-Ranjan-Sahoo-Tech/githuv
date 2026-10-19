@@ -38,9 +38,16 @@ Optional `.env` file at the extension root:
 ```bash
 API_URL=http://localhost:4002
 CLIENT_URL=http://localhost:3000
+CHAT_URL=http://localhost:4004
 ```
 
-Defaults are used when either variable is missing.
+| Variable | Description | Default |
+|---|---|---|
+| `API_URL` | Githuv server API base URL | `https://githuv.onrender.com` |
+| `CLIENT_URL` | Githuv client origin (browser sign-in flow) | `https://githuv.netlify.app` |
+| `CHAT_URL` | Chat service URL (Socket.IO) | `https://githuv-8icz.onrender.com` |
+
+Defaults are used when a variable is missing.
 
 ## Setup
 
@@ -84,7 +91,7 @@ If you prefer not to use the debugger, package first and install the VSIX locall
 bun run install:local
 ```
 
-That builds, packages (`npx @vscode/vsce package --no-dependencies`), and installs the resulting `githuv-0.0.1.vsix` with `--force`.
+That builds, packages (`npx @vscode/vsce package --no-dependencies`), and installs the resulting `githuv-1.0.1.vsix` with `--force`.
 
 If you need the install to be fully non-interactive (auto-answering any prompts), append `-y`:
 
@@ -96,7 +103,7 @@ Or manually:
 
 ```bash
 npx @vscode/vsce package
-code --install-extension githuv-0.0.1.vsix --force
+code --install-extension githuv-1.0.1.vsix --force
 ```
 
 ## Publish to the Marketplace

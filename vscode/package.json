@@ -2,7 +2,7 @@
   "name": "githuv",
   "displayName": "GithuV",
   "description": "AI-powered GitHub repository chat and developer productivity tools",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "publisher": "githuv",
   "private": true,
   "type": "module",
@@ -72,7 +72,7 @@
     "dev": "bun run watch:extension & bun run watch:webview",
     "lint": "tsc --noEmit",
     "vscode:prepublish": "bun run build",
-    "install:local": "bun run build && bunx vsce package --allow-missing-repository --no-dependencies && code --install-extension githuv-0.0.1.vsix --force"
+    "install:local": "bun run build && bunx vsce package --allow-missing-repository --no-dependencies && code --install-extension githuv-1.0.1.vsix --force"
   },
   "devDependencies": {
     "@types/bun": "latest",

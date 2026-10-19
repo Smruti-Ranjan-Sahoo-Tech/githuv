@@ -4,4 +4,6 @@ microservices/bin/
 .env.production
 .env.development
 .env.*
+!.env.example
+!.env.*.example
 .githuv/

@@ -2,11 +2,14 @@
 
 LaTeX-to-PDF compilation microservice for the **Githuv** resume builder. Ships two independent services:
 
-1. **Express service** (port **3005**) — `POST /compile`, used by the Githuv server (`PDF_SERVICE_URL`)
-2. **Standalone Bun.serve service** (port **3001**) — `POST /convert` + `GET /health`, with auto-detection across compilers
+1. **Express service** (default port **3005**) — `POST /compile`, used by the Githuv server (`PDF_SERVICE_URL`)
+2. **Standalone Bun.serve service** (default port **3001**) — `POST /convert` + `GET /health`, with auto-detection across compilers
+
+Both ports live in a single `.env` file — change them there, no code edits needed.
 
 ## Features
 
+- **Configurable URLs** — ports and public URL come from `.env` (Bun loads it automatically)
 - **Compiler auto-detection** — tries, in order: `bin/tectonic`, system `tectonic`, `pdflatex`, `xelatex`, `lualatex`
 - **Sandboxed compilation** — each job runs in an isolated temp directory that is cleaned up afterwards
 - **Security** — runs without shell escape (`-no-shell-escape`, `-interaction=nonstopmode`) and a 20-second timeout in the Express service
@@ -17,29 +20,40 @@ LaTeX-to-PDF compilation microservice for the **Githuv** resume builder. Ships t
 
 ```bash
 bun install
-bun run setup:tex   # downloads the tectonic LaTeX compiler into bin/
-bun run dev         # starts the Express service on port 3005
+cp .env.example .env   # then adjust ports/URLs if needed
+bun run setup:tex      # downloads the tectonic LaTeX compiler into bin/
+bun run dev            # starts the Express service on port 3005
 ```
 
 Other scripts:
 
 | Command | Purpose |
 |---|---|
-| `bun run dev` | Express service on port 3005 (`--watch`) |
-| `bun run start:tex-pdf` | Standalone Bun.serve service on port 3001 |
+| `bun run dev` | Express service on `PORT` (default 3005, `--watch`) |
+| `bun run start:tex-pdf` | Standalone Bun.serve service on `TEX_PDF_PORT` (default 3001) |
 | `bun run setup:tex` | Download tectonic into `bin/` |
 
 > You only need `setup:tex` once. If tectonic is missing, the standalone service falls back to any system LaTeX compiler (`pdflatex`, `xelatex`, `lualatex`).
 
+## Environment Variables (`microservices/pdf-service/.env`)
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3005` | Port for the Express `POST /compile` service |
+| `TEX_PDF_PORT` | `3001` | Port for the standalone `POST /convert` service |
+| `PDF_SERVICE_URL` | `http://localhost:3005` | Public URL of this service as reached by the Githuv server |
+
+> Keep `PDF_SERVICE_URL` in `server/.env` in sync with `PORT` here — if you change `PORT`, update `PDF_SERVICE_URL` too.
+
 ## Endpoints
 
-### Express service (port 3005)
+### Express service (default port 3005)
 
 `POST /compile` — body: `{ "latex": "<tex source>" }`
 
 Returns the compiled PDF as `resume.pdf` (or a JSON error on failure).
 
-### Standalone service (port 3001)
+### Standalone service (default port 3001)
 
 | Endpoint | Description |
 |---|---|
@@ -50,9 +64,11 @@ Returns the compiled PDF as `resume.pdf` (or a JSON error on failure).
 
 ```
 pdf-service/
-├── index.ts                # Express entry point (port 3005)
+├── index.ts                # Express entry point (PORT, default 3005)
+├── .env                    # Local URLs/ports (not committed)
+├── .env.example            # Template for .env
 ├── src/Route/compile.ts    # POST /compile handler (xelatex in temp dir)
-├── services/tex-to-pdf/    # Standalone Bun.serve service (port 3001)
+├── services/tex-to-pdf/    # Standalone Bun.serve service (TEX_PDF_PORT, default 3001)
 ├── bin/                    # Tectonic binary (from setup:tex)
 ├── scripts/setup-tex.sh    # Downloads tectonic
 └── output/pdfs/            # Compiled PDFs (standalone service)

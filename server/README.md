@@ -16,7 +16,7 @@ Express API backend for the **GithuV** platform, running on Bun. Handles authent
 
 ```bash
 bun install
-cp .env.example .env   # (if available) or create .env with your credentials
+cp .env.example .env   # fill in your credentials
 bun run dev            # starts on http://localhost:4002
 ```
 
@@ -29,15 +29,18 @@ Other scripts:
 
 ## Environment Variables
 
+Template: `.env.example`
+
 | Variable | Description |
 |---|---|
 | `MongoDB_URI` | MongoDB connection string |
 | `PORT` | Server port (default: 4002) |
+| `CLIENT_URL` | Comma-separated origins allowed by CORS |
 | `JWT_SERVER_SECREAT` | JWT signing secret (also used by chat-service) |
 | `serviceAccount` | Firebase Admin SDK service account JSON |
 | `GOOGLE_API_KEY` | Google AI / Gemini API key |
 | `GITHUB_ACCESS_TOKEN` | GitHub token for AI model access |
-| `PDF_SERVICE_URL` | LaTeX microservice URL (default: `http://localhost:3005`) |
+| `PDF_SERVICE_URL` | LaTeX microservice URL (default: `http://localhost:3005`) — must match `PORT` in `microservices/pdf-service/.env` |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |
@@ -73,7 +76,7 @@ server/
 ## Related Services
 
 - **Client** (Next.js) on port 3000 — proxies `/api/*` to this server
-- **PDF service** on port 3005 — LaTeX-to-PDF compilation
+- **PDF service** at `PDF_SERVICE_URL` (default `http://localhost:3005`) — LaTeX-to-PDF compilation
 - **Chat service** on port 4004 — real-time Socket.IO chat
 
 See the [root README](../README.md) for full platform setup instructions.

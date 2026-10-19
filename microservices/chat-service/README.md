@@ -17,11 +17,13 @@ Real-time messaging service for the **Githuv** platform. A Socket.IO server on p
 
 ```bash
 bun install
-cp .env.example .env   # (if available) or create .env with your credentials
+cp .env.example .env   # fill in your credentials
 bun run dev            # starts on http://localhost:4004
 ```
 
 ## Environment Variables
+
+Template: `.env.example`
 
 | Variable | Description |
 |---|---|

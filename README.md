@@ -122,8 +122,9 @@ githuv/
 │   │   └── util/         # Contribution grid utilities
 │   └── index.ts          # Server entry point
 ├── microservices/        # LaTeX-to-PDF compilation service
-│   ├── pdf-service/      # Express POST /compile (xelatex) on port 3005
+│   ├── pdf-service/      # Express POST /compile (xelatex), port from .env (default 3005)
 │   │   ├── src/Route/    # Express endpoint
+│   │   ├── .env          # Service URLs/ports (PDF_SERVICE_URL, PORT, TEX_PDF_PORT)
 │   │   └── services/     # Standalone Bun.serve compiler with auto-detection
 │   └── chat-service/     # Real-time Socket.IO chat service on port 4004
 │       ├── src/controller/  # Message persistence, sync & Cloudinary cleanup
@@ -150,21 +151,22 @@ githuv/
 ```bash
 cd server
 bun install
-cp .env.example .env   # (if available) or create .env with your credentials
+cp .env.example .env   # fill in your credentials
 bun run dev            # starts on port 4002
 ```
 
-Required environment variables in `server/.env`:
+Required environment variables in `server/.env` (template: `server/.env.example`):
 
 | Variable | Description |
 |---|---|
 | `MongoDB_URI` | MongoDB connection string |
 | `PORT` | Server port (default: 4002) |
+| `CLIENT_URL` | Comma-separated origins allowed by CORS |
 | `JWT_SERVER_SECREAT` | JWT signing secret |
 | `serviceAccount` | Firebase Admin SDK service account JSON |
 | `GOOGLE_API_KEY` | Google AI / Gemini API key (README/profile/resume generation) |
 | `GITHUB_ACCESS_TOKEN` | GitHub token for GitHub API access |
-| `PDF_SERVICE_URL` | LaTeX microservice URL (default: `http://localhost:3005`) |
+| `PDF_SERVICE_URL` | LaTeX microservice URL (default: `http://localhost:3005`) — keep in sync with `PORT` in `microservices/pdf-service/.env` |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |
@@ -174,20 +176,31 @@ Required environment variables in `server/.env`:
 ```bash
 cd microservices/pdf-service
 bun install
-bun run setup:tex   # downloads tectonic LaTeX compiler
-bun run dev          # starts on port 3005
+cp .env.example .env   # ports/URLs live here — edit to change them
+bun run setup:tex      # downloads tectonic LaTeX compiler
+bun run dev            # starts on the PORT from .env (default 3005)
 ```
+
+Environment variables in `microservices/pdf-service/.env` (template: `.env.example`):
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3005` | Express `POST /compile` service port |
+| `TEX_PDF_PORT` | `3001` | Standalone `POST /convert` service port |
+| `PDF_SERVICE_URL` | `http://localhost:3005` | Public URL of this service |
+
+> If you change `PORT`, update `PDF_SERVICE_URL` in `server/.env` to match.
 
 ### 3. Chat Service Setup
 
 ```bash
 cd microservices/chat-service
 bun install
-cp .env.example .env   # (if available) or create .env with your credentials
+cp .env.example .env   # fill in your credentials
 bun run dev            # starts on port 4004
 ```
 
-Required environment variables in `microservices/chat-service/.env`:
+Required environment variables in `microservices/chat-service/.env` (template: `.env.example`):
 
 | Variable | Description |
 |---|---|
@@ -202,10 +215,11 @@ Required environment variables in `microservices/chat-service/.env`:
 ```bash
 cd client
 bun install
+cp .env.local.example .env.local   # optional — point at your own backend
 bun run dev          # starts on port 3000
 ```
 
-The client proxies `/api/*` requests to `http://localhost:4002` via Next.js rewrites.
+The client proxies `/api/*` requests to `http://localhost:4002` via Next.js rewrites. Override the backend URL with `NEXT_PUBLIC_API_URL` in `client/.env.local` (default: `http://localhost:4002` in dev, `https://githuv.onrender.com` in production).
 
 ---
 

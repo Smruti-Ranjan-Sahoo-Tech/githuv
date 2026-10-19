@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVICE_DIR = join(__dirname, "..", "..");
 const BIN_DIR = join(SERVICE_DIR, "bin");
 const OUTPUT_DIR = join(SERVICE_DIR, "output", "pdfs");
-const PORT = parseInt(process.env.PORT ?? "3001");
+const PORT = parseInt(process.env.TEX_PDF_PORT ?? process.env.PORT ?? "3001");
 const MAX_TEX_SIZE = 10 * 1024 * 1024;
 
 function findCompiler(): string | null {

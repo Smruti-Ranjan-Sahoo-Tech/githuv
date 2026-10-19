@@ -44,20 +44,17 @@ Other scripts:
 
 ## Environment
 
-Create `client/.env` with your Firebase client configuration:
+Create `client/.env.local` from the template (`cp .env.local.example .env.local`):
 
 | Variable | Description |
 |---|---|
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API key |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase auth domain |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
-| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket |
-| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID |
-| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase app ID |
+| `NEXT_PUBLIC_API_URL` | Backend API base URL for the `/api/*` rewrite and the axios instance (default: `http://localhost:4002` in dev, `https://githuv.onrender.com` in production) |
+
+Firebase client configuration is hard-coded in `src/config/firebase.ts` and needs no environment variables.
 
 ## Backend Proxy
 
-The client proxies `/api/*` requests to the Githuv server via Next.js rewrites (`next.config.ts`):
+The client proxies `/api/*` requests to the Githuv server via Next.js rewrites (`next.config.ts`), using `NEXT_PUBLIC_API_URL`:
 
 ```
 /api/:path* → http://localhost:4002/api/:path*

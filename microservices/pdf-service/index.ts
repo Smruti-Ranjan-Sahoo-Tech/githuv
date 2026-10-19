@@ -15,8 +15,10 @@ app.get("/test", (_req, res) => {
 
 app.use("/", compileRoute);
 
-app.listen(3005, () => {
+const PORT = Number(process.env.PORT ?? 3005);
+
+app.listen(PORT, () => {
   console.log(
-    "PDF Service running on port 3005"
+    `PDF Service running on http://localhost:${PORT}`
   );
 });
