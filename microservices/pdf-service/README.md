@@ -74,6 +74,31 @@ pdf-service/
 └── output/pdfs/            # Compiled PDFs (standalone service)
 ```
 
+## Deploying to Azure
+
+`.github/workflows/main_githuv-pdf-service.yml` builds this folder and deploys it to the **githuv-pdf-service** Azure Web App on every push to `main`.
+
+What the workflow does:
+
+1. Installs dependencies with Bun and bundles `index.ts` to `dist/index.js` for the **Node** runtime
+2. Ships `bin/tectonic` (the LaTeX compiler) and a pre-warmed Tectonic cache in the deploy package
+3. Deploys the package, sets the startup command to `node dist/index.js`, and health-checks `GET /test`
+
+The Web App must be a **Linux App Service (code deployment, Node stack)**. The workflow sets these app settings:
+
+| Setting | Value | Description |
+|---|---|---|
+| `TECTONIC_CACHE_DIR` | `/home/site/wwwroot/tectonic-cache` | Where Tectonic keeps its downloaded TeX bundle (shipped with the deployment) |
+| `LATEX_TIMEOUT_MS` | `120000` | Per-compilation timeout; the first compilation also downloads the TeX bundle |
+
+The compiler is auto-detected at runtime: the bundled `bin/tectonic` first, then a system `tectonic`, `xelatex`, `pdflatex` or `lualatex`. Tectonic runs with `-Z continue-on-errors`, which matches `xelatex -interaction=nonstopmode`: recoverable LaTeX errors no longer fail the request.
+
+Point the Githuv server at the deployed service:
+
+```bash
+PDF_SERVICE_URL=https://githuv-pdf-service.azurewebsites.net
+```
+
 ## Related Services
 
 - **Githuv server** on port 4002 — calls `POST /compile` and uploads the returned PDF to Cloudinary

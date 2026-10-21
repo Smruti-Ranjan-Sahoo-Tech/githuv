@@ -1,13 +1,22 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - githuv-pdf-service
+name: Build and deploy PDF service to Azure Web App - githuv-pdf-service
 
 on:
   push:
     branches:
       - 'main'
+    paths:
+      - 'microservices/pdf-service/**'
+      - '.github/workflows/main_githuv-pdf-service.yml'
   workflow_dispatch:
+
+env:
+  SERVICE_DIR: microservices/pdf-service
+  APP_DIR: pdf-service-app
+  APP_NAME: githuv-pdf-service
+  SLOT_NAME: Production
 
 jobs:
   build:
@@ -19,21 +28,56 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '24.x'
 
-      - name: npm install, build, and test
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: microservices/pdf-service
+        run: bun install --frozen-lockfile --production
+
+      - name: Bundle TypeScript for the Node runtime
+        working-directory: microservices/pdf-service
+        run: bun build --target=node --packages=external index.ts --outdir "../../$APP_DIR/dist"
+
+      - name: Assemble deployment package
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+          set -euo pipefail
+          mkdir -p "$APP_DIR/bin"
+          cp "$SERVICE_DIR/bin/tectonic" "$APP_DIR/bin/tectonic"
+          chmod +x "$APP_DIR/bin/tectonic"
+          cp -r "$SERVICE_DIR/node_modules" "$APP_DIR/node_modules"
+          node -e '
+            const fs = require("fs");
+            const pkg = JSON.parse(fs.readFileSync(process.env.SERVICE_DIR + "/package.json", "utf8"));
+            pkg.name = "githuv-pdf-service";
+            pkg.main = "dist/index.js";
+            pkg.scripts = { start: "node dist/index.js" };
+            fs.writeFileSync(process.env.APP_DIR + "/package.json", JSON.stringify(pkg, null, 2) + "\n");
+          '
+
+      - name: Warm up the Tectonic cache
+        continue-on-error: true
+        working-directory: pdf-service-app
+        run: |
+          set -euo pipefail
+          mkdir -p tectonic-cache /tmp/pdf-service-prewarm
+          cp ../server/src/lib/Langgraph/ResumeBuilder/Theme/Theme1.tex ./prewarm.tex
+          TECTONIC_CACHE_DIR="$PWD/tectonic-cache" timeout 300 ./bin/tectonic -Z continue-on-errors \
+            --outdir /tmp/pdf-service-prewarm ./prewarm.tex \
+            || echo "::warning::Tectonic cache warm-up failed, the app will populate it on first request"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: .
+          name: pdf-service-app
+          path: pdf-service-app
+          retention-days: 7
 
   deploy:
     runs-on: ubuntu-latest
@@ -46,8 +90,9 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-      
+          name: pdf-service-app
+          path: pdf-service-app
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -55,11 +100,55 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_86E6345EBD2843D4976BD2A8CDFF63C8 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_294CDA61D5354D69B468171D018877AF }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Configure startup command and app settings
+        uses: azure/cli@v2
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
+          SLOT_NAME: ${{ env.SLOT_NAME }}
+        run: |
+          set -euo pipefail
+          RESOURCE_GROUP=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup" -o tsv | head -1)
+          if [ -z "$RESOURCE_GROUP" ]; then
+            echo "::error::Could not resolve the resource group of ${APP_NAME}"
+            exit 1
+          fi
+          az webapp config set \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --slot "$SLOT_NAME" \
+            --startup-command "node dist/index.js"
+          az webapp config appsettings set \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --slot "$SLOT_NAME" \
+            --settings TECTONIC_CACHE_DIR=/home/site/wwwroot/tectonic-cache LATEX_TIMEOUT_MS=120000
+
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'githuv-pdf-service'
-          slot-name: 'Production'
-          package: .
-          
+          app-name: ${{ env.APP_NAME }}
+          slot-name: ${{ env.SLOT_NAME }}
+          package: pdf-service-app
+
+      - name: Verify the deployment
+        uses: azure/cli@v2
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
+          SLOT_NAME: ${{ env.SLOT_NAME }}
+        run: |
+          set -euo pipefail
+          RESOURCE_GROUP=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup" -o tsv | head -1)
+          HOST=$(az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --slot "$SLOT_NAME" --query defaultHostName -o tsv)
+          echo "Waiting for ${HOST} to respond..."
+          for attempt in $(seq 1 30); do
+            if curl -fsS --max-time 10 "https://${HOST}/test"; then
+              echo ""
+              echo "PDF service is live at https://${HOST}"
+              exit 0
+            fi
+            echo "attempt ${attempt} failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::${HOST} did not become healthy in time. Check the logs with: az webapp log tail --name ${APP_NAME} --resource-group ${RESOURCE_GROUP} --slot ${SLOT_NAME}"
+          exit 1
