@@ -61,6 +61,8 @@ jobs:
             pkg.engines = { node: ">=20" };
             fs.writeFileSync(process.env.APP_DIR + "/package.json", JSON.stringify(pkg, null, 2) + "\n");
           '
+          # Azure falls back to "node server.js" when no startup command is applied
+          printf 'import "./dist/index.js";\n' > "$APP_DIR/server.js"
 
       - name: Warm up the Tectonic cache
         continue-on-error: true
@@ -115,32 +117,42 @@ jobs:
           SLOT_NAME: ${{ env.SLOT_NAME }}
         with:
           inlineScript: |
-            set -euo pipefail
+            set -uo pipefail
             RESOURCE_GROUP=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup" -o tsv | head -1)
             if [ -z "$RESOURCE_GROUP" ]; then
               echo "::error::Could not resolve the resource group of ${APP_NAME}"
               exit 1
             fi
-            az webapp config set \
-              --name "$APP_NAME" \
-              --resource-group "$RESOURCE_GROUP" \
-              --slot "$SLOT_NAME" \
-              --startup-file "node dist/index.js"
-            LINUX_FX=$(az webapp config show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --slot "$SLOT_NAME" --query linuxFxVersion -o tsv)
-            echo "linuxFxVersion: ${LINUX_FX}"
-            if [[ -z "$LINUX_FX" || "$LINUX_FX" != NODE* ]]; then
-              echo "::warning::The web app is not on a Node stack, switching to NODE|22-lts"
-              az webapp config set \
-                --name "$APP_NAME" \
-                --resource-group "$RESOURCE_GROUP" \
-                --slot "$SLOT_NAME" \
-                --linux-fx-version "NODE|22-lts"
-            fi
-            az webapp config appsettings set \
-              --name "$APP_NAME" \
-              --resource-group "$RESOURCE_GROUP" \
-              --slot "$SLOT_NAME" \
-              --settings TECTONIC_CACHE_DIR=/home/site/wwwroot/tectonic-cache LATEX_TIMEOUT_MS=120000
+            echo "Resource group: ${RESOURCE_GROUP}"
+
+            # try the slot first, fall back to the production slot
+            slot_az() {
+              local out
+              if out=$(az "$@" --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --slot "$SLOT_NAME" 2>&1); then
+                echo "OK: az $* --slot ${SLOT_NAME}"
+                return 0
+              fi
+              echo "::warning::az $* --slot ${SLOT_NAME} failed: ${out}"
+              if out=$(az "$@" --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" 2>&1); then
+                echo "OK: az $* (production slot)"
+                return 0
+              fi
+              echo "::warning::az $* failed: ${out}"
+              return 1
+            }
+
+            echo "--- current configuration ---"
+            slot_az webapp config show --query "{stack:linuxFxVersion,appCommandLine:appCommandLine,alwaysOn:alwaysOn}" -o tsv || true
+
+            echo "--- setting the startup command ---"
+            slot_az webapp config set --startup-file "node dist/index.js" || true
+
+            echo "--- setting app settings ---"
+            slot_az webapp config appsettings set --settings TECTONIC_CACHE_DIR=/home/site/wwwroot/tectonic-cache LATEX_TIMEOUT_MS=120000 || true
+
+            echo "--- configuration after ---"
+            slot_az webapp config show --query "{stack:linuxFxVersion,appCommandLine:appCommandLine,alwaysOn:alwaysOn}" -o tsv || true
+            slot_az webapp config appsettings list --query "[].{name:name,value:value}" -o tsv || true
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
