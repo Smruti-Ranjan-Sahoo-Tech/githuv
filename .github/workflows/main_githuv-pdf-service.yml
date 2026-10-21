@@ -124,6 +124,8 @@ jobs:
               exit 1
             fi
             echo "Resource group: ${RESOURCE_GROUP}"
+            echo "--- slots in the resource group ---"
+            az resource list --resource-group "$RESOURCE_GROUP" --resource-type Microsoft.Web/sites/slots --query "[].name" -o tsv || true
 
             # try the slot first, fall back to the production slot
             slot_az() {
@@ -169,9 +171,27 @@ jobs:
           SLOT_NAME: ${{ env.SLOT_NAME }}
         with:
           inlineScript: |
-            set -euo pipefail
+            set -uo pipefail
             RESOURCE_GROUP=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup" -o tsv | head -1)
-            HOST=$(az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --slot "$SLOT_NAME" --query defaultHostName -o tsv)
+            echo "Resource group: ${RESOURCE_GROUP}"
+            echo "--- slots in the resource group ---"
+            az resource list --resource-group "$RESOURCE_GROUP" --resource-type Microsoft.Web/sites/slots --query "[].name" -o tsv || true
+            echo "--- production site configuration ---"
+            az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query "{host:defaultHostName,state:state,stack:linuxFxVersion,command:appCommandLine}" -o tsv || true
+
+            HOST=""
+            if OUT=$(az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --slot "$SLOT_NAME" --query defaultHostName -o tsv 2>&1); then
+              HOST="$OUT"
+            else
+              echo "::warning::Could not read the slot host: ${OUT}"
+              if OUT=$(az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query defaultHostName -o tsv 2>&1); then
+                HOST="$OUT"
+              else
+                echo "::error::Could not resolve the host name: ${OUT}"
+                exit 1
+              fi
+            fi
+            echo "Host: ${HOST}"
             echo "Waiting for ${HOST} to respond..."
             for attempt in $(seq 1 30); do
               if curl -fsS --max-time 10 "https://${HOST}/test"; then
