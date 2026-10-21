@@ -105,23 +105,24 @@ jobs:
         env:
           APP_NAME: ${{ env.APP_NAME }}
           SLOT_NAME: ${{ env.SLOT_NAME }}
-        run: |
-          set -euo pipefail
-          RESOURCE_GROUP=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup" -o tsv | head -1)
-          if [ -z "$RESOURCE_GROUP" ]; then
-            echo "::error::Could not resolve the resource group of ${APP_NAME}"
-            exit 1
-          fi
-          az webapp config set \
-            --name "$APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --slot "$SLOT_NAME" \
-            --startup-command "node dist/index.js"
-          az webapp config appsettings set \
-            --name "$APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --slot "$SLOT_NAME" \
-            --settings TECTONIC_CACHE_DIR=/home/site/wwwroot/tectonic-cache LATEX_TIMEOUT_MS=120000
+        with:
+          inlineScript: |
+            set -euo pipefail
+            RESOURCE_GROUP=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup" -o tsv | head -1)
+            if [ -z "$RESOURCE_GROUP" ]; then
+              echo "::error::Could not resolve the resource group of ${APP_NAME}"
+              exit 1
+            fi
+            az webapp config set \
+              --name "$APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --slot "$SLOT_NAME" \
+              --startup-command "node dist/index.js"
+            az webapp config appsettings set \
+              --name "$APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --slot "$SLOT_NAME" \
+              --settings TECTONIC_CACHE_DIR=/home/site/wwwroot/tectonic-cache LATEX_TIMEOUT_MS=120000
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -136,19 +137,20 @@ jobs:
         env:
           APP_NAME: ${{ env.APP_NAME }}
           SLOT_NAME: ${{ env.SLOT_NAME }}
-        run: |
-          set -euo pipefail
-          RESOURCE_GROUP=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup" -o tsv | head -1)
-          HOST=$(az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --slot "$SLOT_NAME" --query defaultHostName -o tsv)
-          echo "Waiting for ${HOST} to respond..."
-          for attempt in $(seq 1 30); do
-            if curl -fsS --max-time 10 "https://${HOST}/test"; then
-              echo ""
-              echo "PDF service is live at https://${HOST}"
-              exit 0
-            fi
-            echo "attempt ${attempt} failed, retrying in 10s..."
-            sleep 10
-          done
-          echo "::error::${HOST} did not become healthy in time. Check the logs with: az webapp log tail --name ${APP_NAME} --resource-group ${RESOURCE_GROUP} --slot ${SLOT_NAME}"
-          exit 1
+        with:
+          inlineScript: |
+            set -euo pipefail
+            RESOURCE_GROUP=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup" -o tsv | head -1)
+            HOST=$(az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --slot "$SLOT_NAME" --query defaultHostName -o tsv)
+            echo "Waiting for ${HOST} to respond..."
+            for attempt in $(seq 1 30); do
+              if curl -fsS --max-time 10 "https://${HOST}/test"; then
+                echo ""
+                echo "PDF service is live at https://${HOST}"
+                exit 0
+              fi
+              echo "attempt ${attempt} failed, retrying in 10s..."
+              sleep 10
+            done
+            echo "::error::${HOST} did not become healthy in time. Check the logs with: az webapp log tail --name ${APP_NAME} --resource-group ${RESOURCE_GROUP} --slot ${SLOT_NAME}"
+            exit 1
