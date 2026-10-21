@@ -32,6 +32,12 @@ function isFile(candidate: string): boolean {
   }
 }
 
+function ensureExecutable(candidate: string): void {
+  try {
+    fsSync.chmodSync(candidate, 0o755);
+  } catch {}
+}
+
 function findBundledTectonic(): string | null {
   const roots = [
     process.cwd(),
@@ -41,7 +47,11 @@ function findBundledTectonic(): string | null {
 
   for (const root of roots) {
     const candidate = path.join(root, "bin", "tectonic");
-    if (isFile(candidate)) return candidate;
+    if (isFile(candidate)) {
+      // artifact round-trips can strip the executable bit
+      ensureExecutable(candidate);
+      return candidate;
+    }
   }
 
   return null;
@@ -176,6 +186,7 @@ router.post("/compile", async (req, res) => {
         compiler.buildArgs(texFile, workDir),
         {
           timeout: COMPILE_TIMEOUT_MS,
+          killSignal: "SIGKILL",
           maxBuffer: 10 * 1024 * 1024,
         }
       );

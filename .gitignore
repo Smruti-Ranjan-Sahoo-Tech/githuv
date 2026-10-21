@@ -1,4 +1,5 @@
 microservices/bin/
+pdf-service-app/
 .env
 .env.local
 .env.production

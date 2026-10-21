@@ -58,6 +58,7 @@ jobs:
             pkg.name = "githuv-pdf-service";
             pkg.main = "dist/index.js";
             pkg.scripts = { start: "node dist/index.js" };
+            pkg.engines = { node: ">=20" };
             fs.writeFileSync(process.env.APP_DIR + "/package.json", JSON.stringify(pkg, null, 2) + "\n");
           '
 
@@ -93,6 +94,13 @@ jobs:
           name: pdf-service-app
           path: pdf-service-app
 
+      - name: Restore executable permissions
+        working-directory: pdf-service-app
+        run: |
+          set -euo pipefail
+          chmod +x bin/tectonic
+          test -x bin/tectonic
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -117,7 +125,17 @@ jobs:
               --name "$APP_NAME" \
               --resource-group "$RESOURCE_GROUP" \
               --slot "$SLOT_NAME" \
-              --startup-command "node dist/index.js"
+              --startup-file "node dist/index.js"
+            LINUX_FX=$(az webapp config show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --slot "$SLOT_NAME" --query linuxFxVersion -o tsv)
+            echo "linuxFxVersion: ${LINUX_FX}"
+            if [[ -z "$LINUX_FX" || "$LINUX_FX" != NODE* ]]; then
+              echo "::warning::The web app is not on a Node stack, switching to NODE|22-lts"
+              az webapp config set \
+                --name "$APP_NAME" \
+                --resource-group "$RESOURCE_GROUP" \
+                --slot "$SLOT_NAME" \
+                --linux-fx-version "NODE|22-lts"
+            fi
             az webapp config appsettings set \
               --name "$APP_NAME" \
               --resource-group "$RESOURCE_GROUP" \
