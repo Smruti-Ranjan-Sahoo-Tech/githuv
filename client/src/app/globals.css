@@ -932,6 +932,52 @@ body {
   margin-bottom: 0;
 }
 
+/* GitHub profile README styling on the public developer page. */
+.developer-readme {
+  color: #d1d5db;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.developer-readme h1,
+.developer-readme h2,
+.developer-readme h3,
+.developer-readme h4 {
+  margin: 1.5rem 0 0.75rem;
+  color: #f9fafb;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.developer-readme h1 { font-size: 1.875rem; }
+.developer-readme h2 { font-size: 1.5rem; }
+.developer-readme h3 { font-size: 1.25rem; }
+.developer-readme p,
+.developer-readme ul,
+.developer-readme ol,
+.developer-readme blockquote,
+.developer-readme table,
+.developer-readme pre {
+  margin: 0 0 1rem;
+}
+
+.developer-readme ul,
+.developer-readme ol { padding-left: 1.5rem; }
+.developer-readme ul { list-style: disc; }
+.developer-readme ol { list-style: decimal; }
+.developer-readme a { color: #fca5a5; text-decoration: none; }
+.developer-readme a:hover { text-decoration: underline; }
+.developer-readme img { display: inline-block; max-width: 100%; height: auto; vertical-align: middle; }
+.developer-readme table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; }
+.developer-readme th,
+.developer-readme td { padding: 0.5rem 0.75rem; border: 1px solid rgba(255,255,255,0.14); }
+.developer-readme th { color: #f9fafb; background: rgba(255,255,255,0.06); }
+.developer-readme pre { overflow-x: auto; padding: 1rem; border: 1px solid rgba(255,255,255,0.12); border-radius: 0.75rem; background: rgba(0,0,0,0.35); }
+.developer-readme code { overflow-wrap: anywhere; color: #fecaca; }
+.developer-readme :first-child { margin-top: 0; }
+.developer-readme :last-child { margin-bottom: 0; }
+
 @media (prefers-reduced-motion: reduce) {
   .page-enter,
   .shimmer,

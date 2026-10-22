@@ -4,6 +4,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
 import { useEffect, useState } from "react";
 import { FaGithub, FaEnvelope } from "react-icons/fa";
 
@@ -12,10 +13,16 @@ export default function DeveloperPage() {
 
   useEffect(() => {
     fetch("https://api.github.com/repos/Smruti-Ranjan-Sahoo-Tech/Smruti-Ranjan-Sahoo-Tech/readme")
-      .then((r) => r.json())
-      .then((data) => {
-        const decoded = atob(data.content);
-        setReadme(decoded);
+      .then((response) => {
+        if (!response.ok) throw new Error("Could not load the GitHub profile README");
+        return response.json();
+      })
+      .then((data: { content?: string }) => {
+        if (!data.content) return;
+        const bytes = Uint8Array.from(atob(data.content.replace(/\s/g, "")), (char) =>
+          char.charCodeAt(0)
+        );
+        setReadme(new TextDecoder("utf-8").decode(bytes));
       })
       .catch(() => {});
   }, []);
@@ -97,8 +104,8 @@ export default function DeveloperPage() {
         <section className="px-5 py-20">
           <div className="mx-auto max-w-4xl">
             <div className="rounded-xl border border-white/10 bg-neutral-900/60 p-6 sm:p-10">
-              <div className="prose prose-invert max-w-none prose-headings:text-white prose-headings:font-black prose-a:text-red-300 prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-code:text-red-200 prose-img:rounded-xl prose-img:border prose-img:border-white/10">
-                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+              <div className="developer-readme">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                   {readme}
                 </ReactMarkdown>
               </div>
