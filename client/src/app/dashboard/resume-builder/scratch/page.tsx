@@ -358,10 +358,10 @@ export default function ResumeBuilderScratchPage() {
       )}
 
       {/* Main layout */}
-      <div className="flex flex-1 flex-col lg:flex-row gap-4 pt-3 overflow-hidden">
+      <div className="flex flex-1 min-h-0 flex-col lg:flex-row gap-4 pt-3 overflow-hidden">
         {/* LEFT: Editable LaTeX - 60% width */}
         <div
-          className="flex flex-col rounded-2xl overflow-hidden w-full lg:w-[60%]"
+          className="flex min-h-0 flex-1 flex-col rounded-2xl overflow-hidden w-full lg:basis-0 lg:min-w-0"
           style={{
             border: "2px solid var(--accent-border-strong)",
             background: "var(--dashboard-card-bg)",
@@ -412,7 +412,7 @@ export default function ResumeBuilderScratchPage() {
 
         {/* RIGHT: Compiled PDF Preview */}
         <div
-          className="flex flex-col rounded-2xl overflow-hidden w-full lg:flex-1 lg:min-w-0"
+          className="flex min-h-0 flex-1 flex-col rounded-2xl overflow-hidden w-full lg:basis-0 lg:min-w-0"
           style={{
             border: "2px solid var(--border-subtle)",
             background: "var(--dashboard-card-bg)",

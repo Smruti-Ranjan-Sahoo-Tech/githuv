@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { axiosInstance } from "@/API/axiosInstance";
 import { useFirebaseAuthStore } from "@/store/useFirebaseAuthStore";
@@ -269,7 +270,7 @@ export default function ProfileReadmeView() {
               showExisting ? (
                 existingView === "rendered" ? (
                   <div className="markdown-body">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                       {existingReadme}
                     </ReactMarkdown>
                   </div>
@@ -370,7 +371,7 @@ export default function ProfileReadmeView() {
                   </div>
                   {generatedView === "rendered" ? (
                     <div className="markdown-body">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                         {generatedReadme}
                       </ReactMarkdown>
                     </div>
