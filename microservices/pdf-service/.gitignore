@@ -27,6 +27,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .cache
 *.tsbuildinfo
 
+# Tectonic TeX bundle cache (see TECTONIC_CACHE_DIR in .env)
+.tectonic-cache
+tectonic-cache
+
 # IntelliJ based IDEs
 .idea
 

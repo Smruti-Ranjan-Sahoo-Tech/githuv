@@ -15,6 +15,7 @@ const router = express.Router();
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 const COMPILE_TIMEOUT_MS = Number(process.env.LATEX_TIMEOUT_MS ?? 120000);
+const PROBE_TIMEOUT_MS = Number(process.env.LATEX_PROBE_TIMEOUT_MS ?? 10000);
 
 type CompilerSpec = {
   name: string;
@@ -22,7 +23,18 @@ type CompilerSpec = {
   buildArgs: (texFile: string, outputDir: string) => string[];
 };
 
-let cachedCompiler: CompilerSpec | null | undefined;
+type CompilerFailure = {
+  name: string;
+  command: string;
+  error: string;
+};
+
+type CompilerResolution = {
+  compiler: CompilerSpec | null;
+  failures: CompilerFailure[];
+};
+
+let cachedResolution: CompilerResolution | undefined;
 
 function isFile(candidate: string): boolean {
   try {
@@ -90,9 +102,7 @@ function latexArgs(
   ];
 }
 
-function resolveCompiler(): CompilerSpec | null {
-  if (cachedCompiler !== undefined) return cachedCompiler;
-
+function collectCandidates(): CompilerSpec[] {
   const candidates: CompilerSpec[] = [];
 
   const bundledTectonic = findBundledTectonic();
@@ -127,9 +137,96 @@ function resolveCompiler(): CompilerSpec | null {
     }
   }
 
-  cachedCompiler = candidates[0] ?? null;
+  return candidates;
+}
 
-  return cachedCompiler;
+// A compiler that is present on disk can still be unusable: the Azure App
+// Service image ships without libgraphite2, which makes the bundled tectonic
+// binary exit before it can process anything. Probe every candidate so a
+// broken binary never blocks a working fallback.
+function probeCompiler(spec: CompilerSpec): string | null {
+  try {
+    const result = spawnSync(spec.command, ["--version"], {
+      timeout: PROBE_TIMEOUT_MS,
+      encoding: "utf8",
+    });
+
+    if (result.error) {
+      return result.error.message;
+    }
+
+    if (result.status !== 0) {
+      const output = `${result.stdout ?? ""}${
+        result.stderr ?? ""
+      }`.trim();
+
+      return output || `exited with status ${result.status}`;
+    }
+
+    return null;
+  } catch (error: any) {
+    return error?.message ?? "unknown error";
+  }
+}
+
+function resolveCompiler(): CompilerResolution {
+  if (cachedResolution) return cachedResolution;
+
+  const failures: CompilerFailure[] = [];
+  let compiler: CompilerSpec | null = null;
+
+  for (const candidate of collectCandidates()) {
+    const error = probeCompiler(candidate);
+
+    if (error) {
+      failures.push({
+        name: candidate.name,
+        command: candidate.command,
+        error,
+      });
+
+      continue;
+    }
+
+    compiler = candidate;
+    break;
+  }
+
+  cachedResolution = { compiler, failures };
+
+  return cachedResolution;
+}
+
+export function getCompilerStatus() {
+  const { compiler, failures } = resolveCompiler();
+
+  return {
+    available: compiler !== null,
+    name: compiler?.name ?? null,
+    command: compiler?.command ?? null,
+    failures,
+  };
+}
+
+function describeFailures(failures: CompilerFailure[]): string {
+  if (failures.length === 0) {
+    return "no LaTeX compiler candidates were found";
+  }
+
+  return failures
+    .map(
+      (failure) =>
+        `${failure.name} (${failure.command}): ${failure.error}`
+    )
+    .join(" | ");
+}
+
+// The dynamic loader fails before tectonic can report anything, so the
+// compiler output is the only place the missing library shows up.
+function isMissingSharedLibrary(log: string): boolean {
+  return /error while loading shared libraries|cannot open shared object file/i.test(
+    log
+  );
 }
 
 router.post("/compile", async (req, res) => {
@@ -142,13 +239,14 @@ router.post("/compile", async (req, res) => {
     });
   }
 
-  const compiler = resolveCompiler();
+  const { compiler, failures } = resolveCompiler();
 
   if (!compiler) {
     return res.status(500).json({
       success: false,
       message:
-        "No LaTeX compiler available. Expected bin/tectonic in the app package.",
+        "No working LaTeX compiler available on the PDF service.",
+      error: describeFailures(failures),
     });
   }
 
@@ -204,9 +302,13 @@ router.post("/compile", async (req, res) => {
     try {
       pdfBuffer = await fs.readFile(pdfFile);
     } catch {
+      const compilerFailedToStart = isMissingSharedLibrary(compileLog);
+
       return res.status(500).json({
         success: false,
-        message: "Failed to compile PDF",
+        message: compilerFailedToStart
+          ? "The LaTeX compiler could not start on the PDF service."
+          : "Failed to compile PDF",
         error:
           compileLog.slice(-2000) ||
           `No PDF produced by ${compiler.name}`,

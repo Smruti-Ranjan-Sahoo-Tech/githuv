@@ -40,7 +40,9 @@ Template: `.env.example`
 | `serviceAccount` | Firebase Admin SDK service account JSON |
 | `GOOGLE_API_KEY` | Google AI / Gemini API key |
 | `GITHUB_ACCESS_TOKEN` | GitHub token for AI model access |
-| `PDF_SERVICE_URL` | LaTeX microservice URL (default: `http://localhost:3005`) — must match `PORT` in `microservices/pdf-service/.env` |
+| `PDF_SERVICE_URL` | LaTeX microservice URL (default: `http://localhost:3005`) — must match `PORT` in `microservices/pdf-service/.env`. The scheme is optional, a bare host name is treated as `https` |
+| `PDF_SERVICE_URL_FALLBACKS` | Comma-separated hosts tried when the primary PDF service cannot be reached |
+| `PDF_COMPILE_TIMEOUT_MS` | Per-request LaTeX compilation timeout in ms (default: `200000`) |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |

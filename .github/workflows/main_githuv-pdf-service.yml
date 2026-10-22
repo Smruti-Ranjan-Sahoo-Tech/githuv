@@ -51,6 +51,17 @@ jobs:
           mkdir -p "$APP_DIR/bin"
           cp "$SERVICE_DIR/bin/tectonic" "$APP_DIR/bin/tectonic"
           chmod +x "$APP_DIR/bin/tectonic"
+          # The static (musl) build has no shared library dependencies, so it
+          # runs on any Linux image. The GNU build needs libgraphite2, which the
+          # Azure App Service image does not ship.
+          LDD_OUTPUT="$(ldd "$APP_DIR/bin/tectonic" 2>&1 || true)"
+          if [[ "$LDD_OUTPUT" == *"not a dynamic executable"* ]]; then
+            echo "tectonic is statically linked"
+          else
+            echo "::error::bin/tectonic must be the static (musl) build, run 'bun run setup:tex' in microservices/pdf-service"
+            echo "$LDD_OUTPUT"
+            exit 1
+          fi
           cp -r "$SERVICE_DIR/node_modules" "$APP_DIR/node_modules"
           node -e '
             const fs = require("fs");
@@ -71,7 +82,7 @@ jobs:
           set -euo pipefail
           mkdir -p tectonic-cache /tmp/pdf-service-prewarm
           cp ../server/src/lib/Langgraph/ResumeBuilder/Theme/Theme1.tex ./prewarm.tex
-          TECTONIC_CACHE_DIR="$PWD/tectonic-cache" timeout 300 ./bin/tectonic -Z continue-on-errors \
+          TECTONIC_CACHE_DIR="$PWD/tectonic-cache" timeout 600 ./bin/tectonic -Z continue-on-errors \
             --outdir /tmp/pdf-service-prewarm ./prewarm.tex \
             || echo "::warning::Tectonic cache warm-up failed, the app will populate it on first request"
 
@@ -197,10 +208,31 @@ jobs:
               if curl -fsS --max-time 10 "https://${HOST}/test"; then
                 echo ""
                 echo "PDF service is live at https://${HOST}"
-                exit 0
+                break
+              fi
+              if [ "$attempt" = "30" ]; then
+                echo "::error::${HOST} did not become healthy in time. Check the logs with: az webapp log tail --name ${APP_NAME} --resource-group ${RESOURCE_GROUP} --slot ${SLOT_NAME}"
+                exit 1
               fi
               echo "attempt ${attempt} failed, retrying in 10s..."
               sleep 10
             done
-            echo "::error::${HOST} did not become healthy in time. Check the logs with: az webapp log tail --name ${APP_NAME} --resource-group ${RESOURCE_GROUP} --slot ${SLOT_NAME}"
-            exit 1
+
+            echo "--- compiling a test document ---"
+            COMPILE_STATUS=$(curl -sS -o /tmp/pdf-service-compile.out -w "%{http_code}" --max-time 240 \
+              -X POST "https://${HOST}/compile" \
+              -H "Content-Type: application/json" \
+              -d '{"latex":"\\documentclass{article}\\begin{document}Githuv PDF service check\\end{document}"}' || echo "000")
+            if [ "$COMPILE_STATUS" != "200" ]; then
+              echo "::error::The PDF service could not compile a test document (HTTP ${COMPILE_STATUS})"
+              head -c 2000 /tmp/pdf-service-compile.out || true
+              echo ""
+              exit 1
+            fi
+            if ! head -c 5 /tmp/pdf-service-compile.out | grep -q "%PDF-"; then
+              echo "::error::The PDF service did not return a PDF document"
+              head -c 2000 /tmp/pdf-service-compile.out || true
+              echo ""
+              exit 1
+            fi
+            echo "PDF service compiled a test document successfully"

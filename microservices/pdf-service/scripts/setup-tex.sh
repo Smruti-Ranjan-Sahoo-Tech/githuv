@@ -4,6 +4,19 @@ set -euo pipefail
 BIN_DIR="$(dirname "$0")/../bin"
 mkdir -p "$BIN_DIR"
 
+# The static (musl) build has no shared library dependencies, so it runs on
+# every Linux image. The GNU build needs libgraphite2, which the Azure App
+# Service image does not ship.
+is_static_build() {
+  local binary="$1"
+  [[ -x "$binary" ]] || return 1
+  command -v ldd >/dev/null 2>&1 || return 0
+  local output
+  # ldd exits with a non-zero status for static binaries
+  output="$(ldd "$binary" 2>&1 || true)"
+  [[ "$output" == *"not a dynamic executable"* ]]
+}
+
 echo "[setup-tex] Checking for LaTeX compiler..."
 
 if command -v tectonic &>/dev/null; then
@@ -11,13 +24,17 @@ if command -v tectonic &>/dev/null; then
   exit 0
 fi
 
-if [[ -x "$BIN_DIR/tectonic" ]]; then
-  echo "[setup-tex] tectonic already installed locally"
+if is_static_build "$BIN_DIR/tectonic"; then
+  echo "[setup-tex] tectonic already installed locally (static build)"
   exit 0
 fi
 
+if [[ -x "$BIN_DIR/tectonic" ]]; then
+  echo "[setup-tex] the local tectonic build is not static, replacing it"
+fi
+
 echo "[setup-tex] Detecting platform..."
-ARCH="x86_64-unknown-linux-gnu"
+ARCH="x86_64-unknown-linux-musl"
 UNAME=$(uname -m)
 OS=$(uname -s)
 
@@ -28,9 +45,9 @@ if [[ "$OS" == "Darwin" ]]; then
   fi
 elif [[ "$OS" == "Linux" ]]; then
   if [[ "$UNAME" == "aarch64" ]]; then
-    ARCH="aarch64-unknown-linux-gnu"
+    ARCH="aarch64-unknown-linux-musl"
   else
-    ARCH="x86_64-unknown-linux-gnu"
+    ARCH="x86_64-unknown-linux-musl"
   fi
 else
   echo "[setup-tex] Unsupported OS: $OS"

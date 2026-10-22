@@ -92,7 +92,18 @@ export default function ResumeBuilderScratchPage() {
         credentials: "include",
         body: JSON.stringify({ latexCode }),
       });
-      if (!res.ok) throw new Error("Compilation failed");
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as {
+          message?: string;
+          error?: string;
+        } | null;
+
+        throw new Error(
+          payload?.message ||
+            payload?.error ||
+            `Compilation failed (${res.status})`
+        );
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);

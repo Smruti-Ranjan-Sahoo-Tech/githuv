@@ -205,8 +205,16 @@ function ResumeBuilderOutputContent() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.message || "Compilation failed");
+        const err = (await res.json().catch(() => null)) as {
+          message?: string;
+          error?: string;
+        } | null;
+
+        throw new Error(
+          err?.message ||
+            err?.error ||
+            `Compilation failed (${res.status})`
+        );
       }
 
       const blob = await res.blob();

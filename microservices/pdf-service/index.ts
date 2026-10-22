@@ -1,5 +1,5 @@
 import express from "express";
-import compileRoute from "./src/Route/compile";
+import compileRoute, { getCompilerStatus } from "./src/Route/compile";
 
 const app = express();
 
@@ -10,7 +10,11 @@ app.use(
 );
 
 app.get("/test", (_req, res) => {
-  res.status(200).json({ status: "ok", service: "pdf-service" });
+  res.status(200).json({
+    status: "ok",
+    service: "pdf-service",
+    compiler: getCompilerStatus(),
+  });
 });
 
 app.use("/", compileRoute);

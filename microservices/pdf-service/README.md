@@ -12,7 +12,7 @@ Both ports live in a single `.env` file — change them there, no code edits nee
 - **Configurable URLs** — ports and public URL come from `.env` (Bun loads it automatically)
 - **Compiler auto-detection** — tries, in order: `bin/tectonic`, system `tectonic`, `pdflatex`, `xelatex`, `lualatex`
 - **Sandboxed compilation** — each job runs in an isolated temp directory that is cleaned up afterwards
-- **Security** — runs without shell escape (`-no-shell-escape`, `-interaction=nonstopmode`) and a 20-second timeout in the Express service
+- **Security** — runs without shell escape (`-no-shell-escape`, `-interaction=nonstopmode`) and a `LATEX_TIMEOUT_MS` timeout in the Express service
 - **Size limit** — `tex` payloads capped at 10 MB in the standalone service
 - **Health endpoint** — reports available compiler and output directory
 
@@ -34,6 +34,8 @@ Other scripts:
 | `bun run setup:tex` | Download tectonic into `bin/` |
 
 > You only need `setup:tex` once. If tectonic is missing, the standalone service falls back to any system LaTeX compiler (`pdflatex`, `xelatex`, `lualatex`).
+>
+> On Linux `setup:tex` downloads the **statically linked** (musl) Tectonic build, because the GNU build does not run on the Azure App Service image. On macOS it downloads the matching native build.
 
 ## Environment Variables (`microservices/pdf-service/.env`)
 
@@ -42,8 +44,12 @@ Other scripts:
 | `PORT` | `3005` | Port for the Express `POST /compile` service |
 | `TEX_PDF_PORT` | `3001` | Port for the standalone `POST /convert` service |
 | `PDF_SERVICE_URL` | `http://localhost:3005` | Public URL of this service as reached by the Githuv server |
+| `TECTONIC_CACHE_DIR` | `.tectonic-cache` | Where Tectonic keeps the downloaded TeX bundle (~100 MB, git-ignored) |
+| `LATEX_TIMEOUT_MS` | `120000` | Per-compilation timeout |
 
 > Keep `PDF_SERVICE_URL` in `server/.env` in sync with `PORT` here — if you change `PORT`, update `PDF_SERVICE_URL` too.
+>
+> Set `TECTONIC_CACHE_DIR` explicitly. The default cache location differs between Tectonic versions, and the bundle is large enough that it should never live inside the repository.
 
 ## Endpoints
 
@@ -83,6 +89,7 @@ What the workflow does:
 1. Installs dependencies with Bun and bundles `index.ts` to `dist/index.js` for the **Node** runtime
 2. Ships `bin/tectonic` (the LaTeX compiler) and a pre-warmed Tectonic cache in the deploy package
 3. Deploys the package, sets the startup command to `node dist/index.js`, and health-checks `GET /test`
+4. Compiles a test document against the deployed host — a deployment that cannot compile is failed on the spot
 
 The Web App must be a **Linux App Service (code deployment, Node stack)**. The workflow sets these app settings:
 
@@ -91,12 +98,14 @@ The Web App must be a **Linux App Service (code deployment, Node stack)**. The w
 | `TECTONIC_CACHE_DIR` | `/home/site/wwwroot/tectonic-cache` | Where Tectonic keeps its downloaded TeX bundle (shipped with the deployment) |
 | `LATEX_TIMEOUT_MS` | `120000` | Per-compilation timeout; the first compilation also downloads the TeX bundle |
 
-The compiler is auto-detected at runtime: the bundled `bin/tectonic` first, then a system `tectonic`, `xelatex`, `pdflatex` or `lualatex`. Tectonic runs with `-Z continue-on-errors`, which matches `xelatex -interaction=nonstopmode`: recoverable LaTeX errors no longer fail the request.
+The compiler is auto-detected at runtime: the bundled `bin/tectonic` first, then a system `tectonic`, `xelatex`, `pdflatex` or `lualatex`. Every candidate is probed with `--version` before it is used, so a compiler that cannot start (for example a missing shared library) is skipped instead of failing the request. Tectonic runs with `-Z continue-on-errors`, which matches `xelatex -interaction=nonstopmode`: recoverable LaTeX errors no longer fail the request.
 
-Point the Githuv server at the deployed service:
+> The workflow only deploys a **statically linked** Tectonic binary (`x86_64-unknown-linux-musl` / `aarch64-unknown-linux-musl`) and fails the build otherwise. The GNU build is dynamically linked and needs `libgraphite2` plus `GLIBC_2.36`/`GLIBC_2.39`, which the Azure App Service image does not provide — it fails with `error while loading shared libraries: libgraphite2.so.3: cannot open shared object file`.
+
+Point the Githuv server at the deployed service — use the slot host name, the plain `githuv-pdf-service.azurewebsites.net` host does not resolve:
 
 ```bash
-PDF_SERVICE_URL=https://githuv-pdf-service.azurewebsites.net
+PDF_SERVICE_URL=https://githuv-pdf-service-cqamajg9b4h6c2c7.eastasia-01.azurewebsites.net
 ```
 
 ## Related Services
